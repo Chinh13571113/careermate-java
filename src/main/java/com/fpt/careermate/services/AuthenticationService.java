@@ -31,6 +31,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -69,12 +70,7 @@ public class AuthenticationService implements AuthenticationImp {
 
     @Override
     public SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
-        if (token == null || token.isBlank()) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
+
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 
         SignedJWT signedJWT = SignedJWT.parse(token);
@@ -109,25 +105,27 @@ public class AuthenticationService implements AuthenticationImp {
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
-        var token = generateToken(user);
+        var token = generateToken(user,false);
+        var refreshToken = generateToken(user,true);
 
-        return AuthenticationResponse.builder().token(token).authenticated(true).build();
+        return AuthenticationResponse.builder().refreshToken(refreshToken).token(token).authenticated(true).build();
     }
 
     @Override
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
         try {
-            var signToken = verifyToken(request.getToken(), true);
+            var tokens = List.of(request.getToken(), request.getRefreshToken()); // 2 token
+            for (String token : tokens) {
+                var signToken = verifyToken(token, true);
+                String jit = signToken.getJWTClaimsSet().getJWTID();
+                Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-            String jit = signToken.getJWTClaimsSet().getJWTID();
-            Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
-
-            InvalidDateToken invalidatedToken =
-                    InvalidDateToken.builder().id(jit).expiryTime(expiryTime).build();
-
-            invalidatedTokenRepository.save(invalidatedToken);
+                InvalidDateToken invalidatedToken =
+                        InvalidDateToken.builder().id(jit).expiryTime(expiryTime).build();
+                invalidatedTokenRepository.save(invalidatedToken);
+            }
         } catch (AppException exception) {
-            log.info("Token already expired");
+            log.info("Token already expired or invalid");
         }
     }
 
@@ -148,27 +146,53 @@ public class AuthenticationService implements AuthenticationImp {
         var user =
                 accountRepo.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        var token = generateToken(user);
+        var accesstoken = generateToken(user,false);
+        var refreshtoken = generateToken(user,true);
 
-        return AuthenticationResponse.builder().token(token).authenticated(true).build();
+        return AuthenticationResponse.builder().refreshToken(refreshtoken).token(accesstoken).authenticated(true).build();
     }
 
     @Override
-    public String generateToken(Account account) {
+    public String generateToken(Account account,boolean isRefresh) {
+//        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+//
+//        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+//                .subject(account.getEmail())
+//                .issuer("careermate.com")
+//                .issueTime(new Date())
+//                .expirationTime(new Date(
+//                        Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
+//                .jwtID(UUID.randomUUID().toString())
+//                .claim("scope", buildScope(account))
+//                .build();
+//
+//        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+//
+//        JWSObject jwsObject = new JWSObject(header, payload);
+//
+//        try {
+//            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+//            return jwsObject.serialize();
+//        } catch (JOSEException e) {
+//            log.error("Cannot create token", e);
+//            throw new RuntimeException(e);
+//        }
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+
+        long duration = isRefresh ? 7 * 24 * 3600 : VALID_DURATION; // refresh 7 ngày, access token ngắn
+        String scope = isRefresh ? "refresh" : buildScope(account);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(account.getEmail())
                 .issuer("careermate.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
+                        Instant.now().plus(duration, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope", buildScope(account))
+                .claim("scope", scope)
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-
         JWSObject jwsObject = new JWSObject(header, payload);
 
         try {
@@ -179,6 +203,7 @@ public class AuthenticationService implements AuthenticationImp {
             throw new RuntimeException(e);
         }
     }
+
 
     @Override
     public String buildScope(Account account) {

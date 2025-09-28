@@ -33,6 +33,10 @@ public class AccountService implements AccountImp {
     PasswordEncoder passwordEncoder;
     @Override
     public AccountResponse createAccount(AccountCreationRequest request) {
+        if (accountRepo.existsByEmail(request.getEmail()))
+            throw new AppException(ErrorCode.DUPLICATE_EMAIL);
+
+
         Account user = accountMapper.toAccount(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
@@ -41,11 +45,7 @@ public class AccountService implements AccountImp {
 
         user.setRoles(roles);
 
-        try {
-            user = accountRepo.save(user);
-        } catch (DataIntegrityViolationException exception) {
-            throw new AppException(ErrorCode.USER_EXISTED);
-        }
+        user = accountRepo.save(user);
 
         return accountMapper.toAccountResponse(user);
     }

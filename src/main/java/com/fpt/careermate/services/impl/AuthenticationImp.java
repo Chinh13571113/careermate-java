@@ -18,7 +18,7 @@ public interface AuthenticationImp {
     AuthenticationResponse authenticate(AuthenticationRequest request);
     void logout(LogoutRequest request) throws ParseException, JOSEException;
     AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException;
-    String generateToken(Account account);
+    String generateToken(Account account,boolean isRefresh);
     String buildScope(Account account);
 
 
