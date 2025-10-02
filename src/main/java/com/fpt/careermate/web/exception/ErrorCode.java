@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatusCode;
 @Getter
 
 public enum ErrorCode {
+    //    10xx: User
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_KEY(1001, "Uncategorized error", HttpStatus.BAD_REQUEST),
     USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
@@ -17,7 +18,14 @@ public enum ErrorCode {
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
-    DUPLICATE_EMAIL(1009,"Your is email existed" ,HttpStatus.BAD_REQUEST );
+    DUPLICATE_EMAIL(1009, "Your is email existed", HttpStatus.BAD_REQUEST),
+
+    //  20xx: Order
+    ORDER_NOT_FOUND(2000, "Order not found", HttpStatus.NOT_FOUND),
+    CANNOT_DELETE_ORDER(2001, "Cannot delete Order if status is not PENDING", HttpStatus.FORBIDDEN),
+
+    //  30xx: Package
+    PACKAGE_NOT_FOUND(3000, "Package not found", HttpStatus.NOT_FOUND);
 
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

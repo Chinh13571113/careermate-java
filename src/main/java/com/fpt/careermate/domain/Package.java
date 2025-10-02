@@ -1,11 +1,10 @@
 package com.fpt.careermate.domain;
 
-import com.fpt.careermate.util.SnowflakeIdGenerator;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.util.Set;
+import java.util.List;
 
 @Getter
 @Setter
@@ -13,18 +12,17 @@ import java.util.Set;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "account")
-public class Account {
+@Entity(name = "packages")
+public class Package {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
-    String username;
-    @Column(name = "email", unique = true)
-    String email;
-    String password;
 
-    @ManyToMany
-    Set<Role> roles;
+    String name;
+    Long price;
+    int durationDays;
 
-
+    // TODO: change TestCandidate after removing TestCandidate entity
+    @OneToMany(mappedBy = "currentPackage")
+    List<TestCandidate> candidates;
 }

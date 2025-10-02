@@ -14,3 +14,10 @@ jwt:
   valid-duration: 60 # in second
   refreshable-duration: 604800 # in second
   # in seconds
+
+vnpay:
+  tmn-code: 8440W281
+  secret-key: G6L03E0MNR9F06OVL2FOA5LGUM69CZZD
+  pay-url: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+  api-url: "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction"
+  return-url: "http://localhost:8080/payment/return"
