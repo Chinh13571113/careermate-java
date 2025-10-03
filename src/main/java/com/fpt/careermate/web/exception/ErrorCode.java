@@ -1,6 +1,5 @@
 package com.fpt.careermate.web.exception;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -17,7 +16,10 @@ public enum ErrorCode {
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
-    DUPLICATE_EMAIL(1009,"Your is email existed" ,HttpStatus.BAD_REQUEST );
+    DUPLICATE_EMAIL(1009,"Your is email existed" ,HttpStatus.BAD_REQUEST ),
+    BLOG_NOT_FOUND(1010, "Blog not found", HttpStatus.NOT_FOUND),
+    BLOG_INVALID_STATUS(1011, "Invalid blog status", HttpStatus.BAD_REQUEST),
+    BLOG_UNAUTHORIZED(1012, "You are not authorized to modify this blog", HttpStatus.FORBIDDEN);
 
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
