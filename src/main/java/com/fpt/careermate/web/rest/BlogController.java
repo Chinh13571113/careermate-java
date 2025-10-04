@@ -1,6 +1,6 @@
 package com.fpt.careermate.web.rest;
 
-import com.fpt.careermate.services.BlogService;
+import com.fpt.careermate.services.BlogImp;
 import com.fpt.careermate.services.dto.request.BlogCreationRequest;
 import com.fpt.careermate.services.dto.request.BlogUpdateRequest;
 import com.fpt.careermate.services.dto.response.ApiResponse;
@@ -26,7 +26,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class BlogController {
-    BlogService blogImp;
+    BlogImp blogImp;
 
     // ADMIN ONLY - Blog Management Endpoints
 

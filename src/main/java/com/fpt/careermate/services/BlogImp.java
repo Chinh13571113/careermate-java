@@ -26,7 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class BlogService implements com.fpt.careermate.services.impl.BlogService {
+public class BlogImp implements com.fpt.careermate.services.impl.BlogService {
     BlogRepo blogRepo;
     AccountRepo accountRepo;
     BlogMapper blogMapper;
