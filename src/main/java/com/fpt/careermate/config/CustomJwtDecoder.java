@@ -1,7 +1,7 @@
 package com.fpt.careermate.config;
 
-import com.fpt.careermate.services.AuthenticationService;
-import com.fpt.careermate.services.dto.request.IntrospecRequest;
+import com.fpt.careermate.services.AuthenticationImp;
+import com.fpt.careermate.services.dto.request.IntrospectRequest;
 import com.nimbusds.jose.JOSEException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,14 +21,14 @@ public class CustomJwtDecoder implements JwtDecoder {
     @Value("${jwt.signerKey}")
     private String signerKey;
     @Autowired
-    private AuthenticationService authenticationService;
+    private AuthenticationImp authenticationServiceImp;
 
     private NimbusJwtDecoder nimbusJwtDecoder = null;
     @Override
     public Jwt decode(String token) throws JwtException {
         try {
-            var response = authenticationService.introspect(
-                    IntrospecRequest.builder().token(token).build());
+            var response = authenticationServiceImp.introspect(
+                    IntrospectRequest.builder().token(token).build());
 
             if (!response.isValid()) throw new JwtException("Token invalid");
         } catch (JOSEException | ParseException e) {

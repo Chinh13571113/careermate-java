@@ -1,16 +1,16 @@
 package com.fpt.careermate.services;
 
 import com.fpt.careermate.domain.Account;
-import com.fpt.careermate.domain.InvalidDateToken;
+import com.fpt.careermate.domain.InvalidToken;
 import com.fpt.careermate.repository.AccountRepo;
 import com.fpt.careermate.repository.InvalidDateTokenRepo;
 import com.fpt.careermate.services.dto.request.AuthenticationRequest;
-import com.fpt.careermate.services.dto.request.IntrospecRequest;
+import com.fpt.careermate.services.dto.request.IntrospectRequest;
 import com.fpt.careermate.services.dto.request.LogoutRequest;
 import com.fpt.careermate.services.dto.request.RefreshRequest;
 import com.fpt.careermate.services.dto.response.AuthenticationResponse;
-import com.fpt.careermate.services.dto.response.IntrospecResponse;
-import com.fpt.careermate.services.impl.AuthenticationImp;
+import com.fpt.careermate.services.dto.response.IntrospectResponse;
+import com.fpt.careermate.services.impl.AuthenticationService;
 import com.fpt.careermate.web.exception.AppException;
 import com.fpt.careermate.web.exception.ErrorCode;
 import com.nimbusds.jose.*;
@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,14 +32,13 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.List;
 import java.util.StringJoiner;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AuthenticationService implements AuthenticationImp {
+public class AuthenticationImp implements AuthenticationService {
     @NonFinal
     @Value("${jwt.signerKey}")
     protected String SIGNER_KEY;
@@ -55,7 +55,7 @@ public class AuthenticationService implements AuthenticationImp {
 
     private final AccountRepo accountRepo;
     @Override
-    public IntrospecResponse introspect(IntrospecRequest request) throws JOSEException, ParseException {
+    public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
         boolean isValid = true;
 
@@ -65,7 +65,7 @@ public class AuthenticationService implements AuthenticationImp {
             isValid = false;
         }
 
-        return IntrospecResponse.builder().valid(isValid).build();
+        return IntrospectResponse.builder().valid(isValid).build();
     }
 
     @Override
@@ -105,27 +105,32 @@ public class AuthenticationService implements AuthenticationImp {
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
-        var token = generateToken(user,false);
-        var refreshToken = generateToken(user,true);
+        String accessToken = generateToken(user,false);
+        String refreshToken = generateToken(user,true);
 
-        return AuthenticationResponse.builder().refreshToken(refreshToken).token(token).authenticated(true).build();
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .authenticated(true)
+                .expiresIn(VALID_DURATION)
+                .tokenType("Bearer")
+                .build();
     }
 
     @Override
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
         try {
-            var tokens = List.of(request.getToken(), request.getRefreshToken()); // 2 token
-            for (String token : tokens) {
-                var signToken = verifyToken(token, true);
-                String jit = signToken.getJWTClaimsSet().getJWTID();
-                Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+            var signToken = verifyToken(request.getToken(), true);
 
-                InvalidDateToken invalidatedToken =
-                        InvalidDateToken.builder().id(jit).expiryTime(expiryTime).build();
-                invalidatedTokenRepository.save(invalidatedToken);
-            }
+            String jit = signToken.getJWTClaimsSet().getJWTID();
+            Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+
+            InvalidToken invalidatedToken =
+                    InvalidToken.builder().id(jit).expiryTime(expiryTime).build();
+
+            invalidatedTokenRepository.save(invalidatedToken);
         } catch (AppException exception) {
-            log.info("Token already expired or invalid");
+            log.info("Token already expired");
         }
     }
 
@@ -136,63 +141,45 @@ public class AuthenticationService implements AuthenticationImp {
         var jit = signedJWT.getJWTClaimsSet().getJWTID();
         var expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
-        InvalidDateToken invalidatedToken =
-                InvalidDateToken.builder().id(jit).expiryTime(expiryTime).build();
+        InvalidToken invalidatedToken =
+                InvalidToken.builder().id(jit).expiryTime(expiryTime).build();
 
         invalidatedTokenRepository.save(invalidatedToken);
 
-        var email = signedJWT.getJWTClaimsSet().getSubject();
+        var username = signedJWT.getJWTClaimsSet().getSubject();
 
-        var user =
-                accountRepo.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        var user = accountRepo.findByEmail(username)
+                .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        var accesstoken = generateToken(user,false);
-        var refreshtoken = generateToken(user,true);
+        String newAccessToken = generateToken(user,false);
+        String newRefreshToken = generateToken(user,true);
 
-        return AuthenticationResponse.builder().refreshToken(refreshtoken).token(accesstoken).authenticated(true).build();
+        return AuthenticationResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .authenticated(true)
+                .expiresIn(VALID_DURATION)
+                .tokenType("Bearer")
+                .build();
     }
 
     @Override
-    public String generateToken(Account account,boolean isRefresh) {
-//        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-//
-//        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-//                .subject(account.getEmail())
-//                .issuer("careermate.com")
-//                .issueTime(new Date())
-//                .expirationTime(new Date(
-//                        Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
-//                .jwtID(UUID.randomUUID().toString())
-//                .claim("scope", buildScope(account))
-//                .build();
-//
-//        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-//
-//        JWSObject jwsObject = new JWSObject(header, payload);
-//
-//        try {
-//            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
-//            return jwsObject.serialize();
-//        } catch (JOSEException e) {
-//            log.error("Cannot create token", e);
-//            throw new RuntimeException(e);
-//        }
+    public String generateToken(Account account, boolean isRefresh) {
+        long validDuration = (isRefresh) ? REFRESHABLE_DURATION : VALID_DURATION;
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-
-        long duration = isRefresh ? 7 * 24 * 3600 : VALID_DURATION; // refresh 7 ngày, access token ngắn
-        String scope = isRefresh ? "refresh" : buildScope(account);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(account.getEmail())
                 .issuer("careermate.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(duration, ChronoUnit.SECONDS).toEpochMilli()))
+                        Instant.now().plus(validDuration, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope", scope)
+                .claim("scope", buildScope(account))
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+
         JWSObject jwsObject = new JWSObject(header, payload);
 
         try {
@@ -203,6 +190,8 @@ public class AuthenticationService implements AuthenticationImp {
             throw new RuntimeException(e);
         }
     }
+
+
 
 
     @Override
@@ -218,4 +207,12 @@ public class AuthenticationService implements AuthenticationImp {
 
         return stringJoiner.toString();
     }
+
+    @Override
+    public Account findByEmail() {
+        var context = SecurityContextHolder.getContext();
+        String email = context.getAuthentication().getName();
+        return accountRepo.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+    }
+
 }

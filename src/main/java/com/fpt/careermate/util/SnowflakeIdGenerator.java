@@ -1,6 +1,5 @@
 package com.fpt.careermate.util;
 
-import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,26 +18,24 @@ public class SnowflakeIdGenerator {
 
     private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
 
-    private static SnowflakeIdGenerator instance;
-
-    private final long workerId = 1L;
-    private final long datacenterId = 1L;
+    private final long workerId;
+    private final long datacenterId;
     private long sequence = 0L;
     private long lastTimestamp = -1L;
 
-    @PostConstruct
-    public void init() {
-        instance = this;
-    }
+    public SnowflakeIdGenerator() {
+        this.workerId = 1L;
+        this.datacenterId = 1L;
 
-    public static String nextId() {
-        if (instance == null) {
-            throw new IllegalStateException("SnowflakeIdGenerator not initialized");
+        if (workerId > MAX_WORKER_ID || workerId < 0) {
+            throw new IllegalArgumentException("Worker ID can't be greater than " + MAX_WORKER_ID + " or less than 0");
         }
-        return instance.generateId();
+        if (datacenterId > MAX_DATACENTER_ID || datacenterId < 0) {
+            throw new IllegalArgumentException("Datacenter ID can't be greater than " + MAX_DATACENTER_ID + " or less than 0");
+        }
     }
 
-    private synchronized String generateId() {
+    public synchronized String nextId() {
         long timestamp = timeGen();
 
         if (timestamp < lastTimestamp) {
