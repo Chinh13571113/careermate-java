@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface AccountMapper {
     @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "status", ignore = true)
     Account toAccount(AccountCreationRequest request);
 
     AccountResponse toAccountResponse(Account account);
