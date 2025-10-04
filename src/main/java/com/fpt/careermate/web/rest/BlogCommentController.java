@@ -1,6 +1,6 @@
 package com.fpt.careermate.web.rest;
 
-import com.fpt.careermate.services.BlogCommentService;
+import com.fpt.careermate.services.BlogCommentImp;
 import com.fpt.careermate.services.dto.request.BlogCommentRequest;
 import com.fpt.careermate.services.dto.response.ApiResponse;
 import com.fpt.careermate.services.dto.response.BlogCommentResponse;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class BlogCommentController {
-    BlogCommentService blogCommentService;
+    BlogCommentImp blogCommentImp;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -31,7 +31,7 @@ public class BlogCommentController {
             @Valid @RequestBody BlogCommentRequest request) {
         log.info("REST request to create comment for blog ID: {}", blogId);
         return ApiResponse.<BlogCommentResponse>builder()
-                .result(blogCommentService.createComment(blogId, request))
+                .result(blogCommentImp.createComment(blogId, request))
                 .build();
     }
 
@@ -50,7 +50,7 @@ public class BlogCommentController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return ApiResponse.<Page<BlogCommentResponse>>builder()
-                .result(blogCommentService.getCommentsByBlogId(blogId, pageable))
+                .result(blogCommentImp.getCommentsByBlogId(blogId, pageable))
                 .build();
     }
 
@@ -62,7 +62,7 @@ public class BlogCommentController {
             @Valid @RequestBody BlogCommentRequest request) {
         log.info("REST request to update comment ID: {}", commentId);
         return ApiResponse.<BlogCommentResponse>builder()
-                .result(blogCommentService.updateComment(commentId, request))
+                .result(blogCommentImp.updateComment(commentId, request))
                 .build();
     }
 
@@ -72,7 +72,7 @@ public class BlogCommentController {
             @PathVariable Long blogId,
             @PathVariable Long commentId) {
         log.info("REST request to delete comment ID: {}", commentId);
-        blogCommentService.deleteComment(commentId);
+        blogCommentImp.deleteComment(commentId);
         return ApiResponse.<Void>builder()
                 .message("Comment deleted successfully")
                 .build();

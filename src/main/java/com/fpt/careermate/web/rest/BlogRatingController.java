@@ -1,6 +1,6 @@
 package com.fpt.careermate.web.rest;
 
-import com.fpt.careermate.services.BlogRatingService;
+import com.fpt.careermate.services.BlogRatingImp;
 import com.fpt.careermate.services.dto.request.BlogRatingRequest;
 import com.fpt.careermate.services.dto.response.ApiResponse;
 import com.fpt.careermate.services.dto.response.BlogRatingResponse;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class BlogRatingController {
-    BlogRatingService blogRatingService;
+    BlogRatingImp blogRatingImp;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -27,7 +27,7 @@ public class BlogRatingController {
             @Valid @RequestBody BlogRatingRequest request) {
         log.info("REST request to rate blog ID: {}", blogId);
         return ApiResponse.<BlogRatingResponse>builder()
-                .result(blogRatingService.rateBlog(blogId, request))
+                .result(blogRatingImp.rateBlog(blogId, request))
                 .build();
     }
 
@@ -36,7 +36,7 @@ public class BlogRatingController {
     public ApiResponse<BlogRatingResponse> getUserRating(@PathVariable Long blogId) {
         log.info("REST request to get user rating for blog ID: {}", blogId);
         return ApiResponse.<BlogRatingResponse>builder()
-                .result(blogRatingService.getUserRating(blogId))
+                .result(blogRatingImp.getUserRating(blogId))
                 .build();
     }
 
@@ -44,7 +44,7 @@ public class BlogRatingController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> deleteRating(@PathVariable Long blogId) {
         log.info("REST request to delete rating for blog ID: {}", blogId);
-        blogRatingService.deleteRating(blogId);
+        blogRatingImp.deleteRating(blogId);
         return ApiResponse.<Void>builder()
                 .message("Rating deleted successfully")
                 .build();

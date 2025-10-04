@@ -7,7 +7,6 @@ import com.fpt.careermate.repository.BlogRepo;
 import com.fpt.careermate.services.dto.request.BlogCreationRequest;
 import com.fpt.careermate.services.dto.request.BlogUpdateRequest;
 import com.fpt.careermate.services.dto.response.BlogResponse;
-import com.fpt.careermate.services.impl.BlogImp;
 import com.fpt.careermate.services.mapper.BlogMapper;
 import com.fpt.careermate.web.exception.AppException;
 import com.fpt.careermate.web.exception.ErrorCode;
@@ -27,7 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class BlogService implements BlogImp {
+public class BlogService implements com.fpt.careermate.services.impl.BlogService {
     BlogRepo blogRepo;
     AccountRepo accountRepo;
     BlogMapper blogMapper;

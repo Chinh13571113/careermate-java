@@ -16,9 +16,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class BlogImageCleanupService {
+public class BlogImageCleanupImp {
 
-    FileStorageService fileStorageService;
+    FileStorageImp fileStorageImp;
 
     /**
      * Extract image file names from HTML content
@@ -60,7 +60,7 @@ public class BlogImageCleanupService {
 
             // Delete unused images
             for (String fileName : imagesToDelete) {
-                fileStorageService.deleteFile(fileName);
+                fileStorageImp.deleteFile(fileName);
                 log.info("Deleted unused image: {}", fileName);
             }
 
@@ -77,7 +77,7 @@ public class BlogImageCleanupService {
             List<String> imageFileNames = extractImageFileNames(htmlContent);
 
             for (String fileName : imageFileNames) {
-                fileStorageService.deleteFile(fileName);
+                fileStorageImp.deleteFile(fileName);
                 log.info("Deleted image from deleted blog: {}", fileName);
             }
 

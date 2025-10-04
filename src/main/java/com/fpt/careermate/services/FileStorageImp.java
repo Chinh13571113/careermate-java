@@ -18,11 +18,11 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-public class FileStorageService {
+public class FileStorageImp {
 
     private final Path fileStorageLocation;
 
-    public FileStorageService(@Value("${file.upload-dir:uploads}") String uploadDir) {
+    public FileStorageImp(@Value("${file.upload-dir:uploads}") String uploadDir) {
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
 
         try {

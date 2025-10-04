@@ -26,7 +26,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class BlogRatingService {
+public class BlogRatingImp {
     BlogRatingRepo blogRatingRepo;
     BlogRepo blogRepo;
     AccountRepo accountRepo;

@@ -26,7 +26,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class BlogController {
-    BlogService blogService;
+    BlogService blogImp;
 
     // ADMIN ONLY - Blog Management Endpoints
 
@@ -37,7 +37,7 @@ public class BlogController {
         String email = authentication.getName();
 
         return ApiResponse.<BlogResponse>builder()
-                .result(blogService.createBlog(request, email))
+                .result(blogImp.createBlog(request, email))
                 .build();
     }
 
@@ -47,14 +47,14 @@ public class BlogController {
             @PathVariable Long blogId,
             @RequestBody BlogUpdateRequest request) {
         return ApiResponse.<BlogResponse>builder()
-                .result(blogService.updateBlog(blogId, request))
+                .result(blogImp.updateBlog(blogId, request))
                 .build();
     }
 
     @DeleteMapping("/{blogId}")
     @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<Void> deleteBlog(@PathVariable Long blogId) {
-        blogService.deleteBlog(blogId);
+        blogImp.deleteBlog(blogId);
         return ApiResponse.<Void>builder()
                 .message("Blog deleted successfully")
                 .build();
@@ -64,7 +64,7 @@ public class BlogController {
     @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<BlogResponse> publishBlog(@PathVariable Long blogId) {
         return ApiResponse.<BlogResponse>builder()
-                .result(blogService.publishBlog(blogId))
+                .result(blogImp.publishBlog(blogId))
                 .build();
     }
 
@@ -72,7 +72,7 @@ public class BlogController {
     @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<BlogResponse> archiveBlog(@PathVariable Long blogId) {
         return ApiResponse.<BlogResponse>builder()
-                .result(blogService.archiveBlog(blogId))
+                .result(blogImp.archiveBlog(blogId))
                 .build();
     }
 
@@ -80,9 +80,9 @@ public class BlogController {
 
     @GetMapping("/{blogId}")
     ApiResponse<BlogResponse> getBlogById(@PathVariable Long blogId) {
-        blogService.incrementViewCount(blogId);
+        blogImp.incrementViewCount(blogId);
         return ApiResponse.<BlogResponse>builder()
-                .result(blogService.getBlogById(blogId))
+                .result(blogImp.getBlogById(blogId))
                 .build();
     }
 
@@ -99,7 +99,7 @@ public class BlogController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return ApiResponse.<Page<BlogResponse>>builder()
-                .result(blogService.getAllBlogs(pageable))
+                .result(blogImp.getAllBlogs(pageable))
                 .build();
     }
 
@@ -117,7 +117,7 @@ public class BlogController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return ApiResponse.<Page<BlogResponse>>builder()
-                .result(blogService.getBlogsByStatus(status, pageable))
+                .result(blogImp.getBlogsByStatus(status, pageable))
                 .build();
     }
 
@@ -135,7 +135,7 @@ public class BlogController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return ApiResponse.<Page<BlogResponse>>builder()
-                .result(blogService.getBlogsByCategory(category, pageable))
+                .result(blogImp.getBlogsByCategory(category, pageable))
                 .build();
     }
 
@@ -153,7 +153,7 @@ public class BlogController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return ApiResponse.<Page<BlogResponse>>builder()
-                .result(blogService.getBlogsByAuthor(authorId, pageable))
+                .result(blogImp.getBlogsByAuthor(authorId, pageable))
                 .build();
     }
 
@@ -172,14 +172,14 @@ public class BlogController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return ApiResponse.<Page<BlogResponse>>builder()
-                .result(blogService.searchBlogs(keyword, status, pageable))
+                .result(blogImp.searchBlogs(keyword, status, pageable))
                 .build();
     }
 
     @GetMapping("/categories")
     ApiResponse<List<String>> getAllCategories() {
         return ApiResponse.<List<String>>builder()
-                .result(blogService.getAllCategories())
+                .result(blogImp.getAllCategories())
                 .build();
     }
 }

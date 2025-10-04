@@ -28,7 +28,7 @@ public enum ErrorCode {
     RATING_NOT_EXISTED(1017, "Rating does not exist", HttpStatus.NOT_FOUND),
     INVALID_FILE(1018, "Invalid file name or path", HttpStatus.BAD_REQUEST),
     FILE_STORAGE_ERROR(1019, "Could not store file", HttpStatus.INTERNAL_SERVER_ERROR),
-    INVALID_ROLE(1020, "Invalid role. Only CANDIDATE or RECRUITER allowed during registration", HttpStatus.BAD_REQUEST);
+    INVALID_ROLE(1020, "Invalid role. Only CANDIDATE or RECRUITER allowed during registration", HttpStatus.BAD_REQUEST),
 
     PROFILE_NOT_FOUND(1010,"Profile not exist" ,HttpStatus.BAD_REQUEST ),
     CANDIDATE_NOT_FOUND(1011,"Candidate Not found" ,HttpStatus.BAD_REQUEST ),

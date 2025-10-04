@@ -24,13 +24,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class BlogCommentService {
+public class BlogCommentImp {
     BlogCommentRepo blogCommentRepo;
     BlogRepo blogRepo;
     AccountRepo accountRepo;
