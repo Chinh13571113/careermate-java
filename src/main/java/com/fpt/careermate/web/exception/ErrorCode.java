@@ -17,7 +17,13 @@ public enum ErrorCode {
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
-    DUPLICATE_EMAIL(1009,"Your is email existed" ,HttpStatus.BAD_REQUEST );
+    DUPLICATE_EMAIL(1009,"Your is email existed" ,HttpStatus.BAD_REQUEST ),
+    PROFILE_NOT_FOUND(1010,"Profile not exist" ,HttpStatus.BAD_REQUEST ),
+    CANDIDATE_NOT_FOUND(1011,"Candidate Not found" ,HttpStatus.BAD_REQUEST ),
+    OTP_INVALID(1012,"Otp is invalid" ,HttpStatus.BAD_REQUEST ),
+    OTP_EXPIRED(1013, "Otp is expired",HttpStatus.BAD_REQUEST ),
+    PASSWORD_NOT_MATCH(1014,"Password not Match" ,HttpStatus.BAD_REQUEST ),
+    INVALID_EMAIL_FORMAT(1015,"Invalid Mail" ,HttpStatus.BAD_REQUEST );
 
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

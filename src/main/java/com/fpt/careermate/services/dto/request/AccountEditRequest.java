@@ -1,4 +1,4 @@
-package com.fpt.careermate.services.dto.response;
+package com.fpt.careermate.services.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class IntrospecResponse {
-    boolean valid;
+public class AccountEditRequest {
+    String username;
+    String password;
 }

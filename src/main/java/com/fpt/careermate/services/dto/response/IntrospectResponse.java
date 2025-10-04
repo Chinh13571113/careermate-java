@@ -3,18 +3,11 @@ package com.fpt.careermate.services.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
-import java.util.Set;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AccountResponse {
-    String email;
-    String username;
-    String status;
-    Set<RoleResponse> roles;
-
+public class IntrospectResponse {
+    boolean valid;
 }

@@ -1,4 +1,6 @@
 spring:
+#  main:
+#    web-application-type: none
   application:
     name: careermate
   datasource:
@@ -8,9 +10,21 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update      # hoặc validate/create theo nhu cầu
+      ddl-auto: update
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_NAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 jwt:
   signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
-  valid-duration: 60 # in second
+  valid-duration: 900 # in second
   refreshable-duration: 604800 # in second
   # in seconds
