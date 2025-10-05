@@ -1,11 +1,11 @@
 package com.fpt.careermate.services;
 
 import com.fpt.careermate.config.PaymentConfig;
+import com.fpt.careermate.constant.StatusOrder;
+import com.fpt.careermate.constant.StatusPayment;
 import com.fpt.careermate.domain.Order;
 import com.fpt.careermate.domain.Package;
 import com.fpt.careermate.domain.Payment;
-import com.fpt.careermate.domain.enums.OrderStatus;
-import com.fpt.careermate.domain.enums.PaymentStatus;
 import com.fpt.careermate.repository.OrderRepo;
 import com.fpt.careermate.repository.PaymentRepo;
 import com.fpt.careermate.services.impl.PaymentService;
@@ -137,15 +137,15 @@ public class PaymentImp implements PaymentService {
             }
         }
 
-        if(order.getStatus().equals(OrderStatus.CANCELLED.toString())){
+        if(order.getStatus().equals(StatusOrder.CANCELLED)){
             return "cancelled";
         }
 
         if (!valid) {
-            serverStatus = PaymentStatus.INVALID_HASH.toString();
+            serverStatus = StatusPayment.INVALID_HASH;
         } else {
             if ("00".equals(vnpResponse)) {
-                serverStatus = PaymentStatus.SUCCESS.toString();
+                serverStatus = StatusPayment.SUCCESS;
             } else {
                 serverStatus = "failed_" + (vnpResponse == null ? "unknown" : vnpResponse);
             }
@@ -168,11 +168,11 @@ public class PaymentImp implements PaymentService {
 
             // validate payment status
             if (!valid) {
-                payment.setStatus(PaymentStatus.INVALID_HASH.toString());
+                payment.setStatus(StatusPayment.INVALID_HASH);
             } else if ("00".equals(vnpResponse)) {
-                payment.setStatus(PaymentStatus.SUCCESS.toString());
+                payment.setStatus(StatusPayment.SUCCESS);
             } else {
-                payment.setStatus(PaymentStatus.FAILED.toString());
+                payment.setStatus(StatusPayment.FAILED);
             }
 
             // 3) assign relation payment -> found order
@@ -185,7 +185,7 @@ public class PaymentImp implements PaymentService {
             if (maybePayment.isPresent()) {
                 Payment existing = maybePayment.get();
 
-                if (!existing.getStatus().equals(PaymentStatus.SUCCESS.toString())) {
+                if (!existing.getStatus().equals(StatusPayment.SUCCESS)) {
                     existing.setTransactionNo(payment.getTransactionNo());
                     existing.setAmount(payment.getAmount());
                     existing.setResponseCode(payment.getResponseCode());
@@ -201,11 +201,11 @@ public class PaymentImp implements PaymentService {
             }
 
             // 5) if payment success -> update order & candidate
-            if (payment.getStatus().equals(PaymentStatus.SUCCESS.toString()) && order != null) {
-                if (!order.getStatus().equals(OrderStatus.PAID.toString())) {
+            if (payment.getStatus().equals(StatusPayment.SUCCESS) && order != null) {
+                if (!order.getStatus().equals(StatusOrder.PAID)) {
                     LocalDate now = LocalDate.now();
 
-                    order.setStatus(OrderStatus.PAID.toString());
+                    order.setStatus(StatusOrder.PAID);
                     order.setStartDate(now);
                     Package pkg = order.getCandidatePackage();
                     order.setEndDate(now.plusDays(pkg.getDurationDays()));

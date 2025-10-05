@@ -1,9 +1,9 @@
 package com.fpt.careermate.services;
 
+import com.fpt.careermate.constant.StatusOrder;
 import com.fpt.careermate.domain.Order;
 import com.fpt.careermate.domain.Package;
 import com.fpt.careermate.domain.TestCandidate;
-import com.fpt.careermate.domain.enums.OrderStatus;
 import com.fpt.careermate.repository.OrderRepo;
 import com.fpt.careermate.repository.PackageRepo;
 import com.fpt.careermate.services.dto.request.OrderCreationRequest;
@@ -53,7 +53,7 @@ public class OrderImp implements OrderService {
         order.setAmount(pkg.getPrice());
         order.setPackageNameSnapshot(pkg.getName());
         order.setPackagePriceSnapshot(pkg.getPrice());
-        order.setStatus(OrderStatus.PENDING.toString());
+        order.setStatus(StatusOrder.PENDING);
         order.setCreateAt(LocalDate.now());
         Order savedOrder = orderRepo.save(order);
 
@@ -66,11 +66,11 @@ public class OrderImp implements OrderService {
         Order order = orderRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        if (!order.getStatus().equals(OrderStatus.PENDING.toString())) {
+        if (!order.getStatus().equals(StatusOrder.PENDING)) {
             throw new AppException(ErrorCode.CANNOT_DELETE_ORDER);
         }
 
-        order.setStatus(OrderStatus.CANCELLED.toString());
+        order.setStatus(StatusOrder.CANCELLED);
         order.setCancelledAt(LocalDate.now());
         orderRepo.save(order);
     }
