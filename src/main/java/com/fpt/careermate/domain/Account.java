@@ -1,6 +1,5 @@
 package com.fpt.careermate.domain;
 
-import com.fpt.careermate.util.SnowflakeIdGenerator;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -22,9 +21,13 @@ public class Account {
     @Column(name = "email", unique = true)
     String email;
     String password;
+    @Column(name = "status")
+    String status;
 
     @ManyToMany
     Set<Role> roles;
 
+    @OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
+    ForgotPassword forgotPassword;
 
 }

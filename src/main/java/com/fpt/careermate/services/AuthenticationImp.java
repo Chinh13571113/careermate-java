@@ -1,16 +1,16 @@
 package com.fpt.careermate.services;
 
 import com.fpt.careermate.domain.Account;
-import com.fpt.careermate.domain.InvalidDateToken;
+import com.fpt.careermate.domain.InvalidToken;
 import com.fpt.careermate.repository.AccountRepo;
 import com.fpt.careermate.repository.InvalidDateTokenRepo;
 import com.fpt.careermate.services.dto.request.AuthenticationRequest;
-import com.fpt.careermate.services.dto.request.IntrospecRequest;
+import com.fpt.careermate.services.dto.request.IntrospectRequest;
 import com.fpt.careermate.services.dto.request.LogoutRequest;
 import com.fpt.careermate.services.dto.request.RefreshRequest;
 import com.fpt.careermate.services.dto.response.AuthenticationResponse;
-import com.fpt.careermate.services.dto.response.IntrospecResponse;
-import com.fpt.careermate.services.impl.AuthenticationImp;
+import com.fpt.careermate.services.dto.response.IntrospectResponse;
+import com.fpt.careermate.services.impl.AuthenticationService;
 import com.fpt.careermate.web.exception.AppException;
 import com.fpt.careermate.web.exception.ErrorCode;
 import com.nimbusds.jose.*;
@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AuthenticationService implements AuthenticationImp {
+public class AuthenticationImp implements AuthenticationService {
     @NonFinal
     @Value("${jwt.signerKey}")
     protected String SIGNER_KEY;
@@ -54,7 +55,7 @@ public class AuthenticationService implements AuthenticationImp {
 
     private final AccountRepo accountRepo;
     @Override
-    public IntrospecResponse introspect(IntrospecRequest request) throws JOSEException, ParseException {
+    public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
         boolean isValid = true;
 
@@ -64,7 +65,7 @@ public class AuthenticationService implements AuthenticationImp {
             isValid = false;
         }
 
-        return IntrospecResponse.builder().valid(isValid).build();
+        return IntrospectResponse.builder().valid(isValid).build();
     }
 
     @Override
@@ -124,8 +125,8 @@ public class AuthenticationService implements AuthenticationImp {
             String jit = signToken.getJWTClaimsSet().getJWTID();
             Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-            InvalidDateToken invalidatedToken =
-                    InvalidDateToken.builder().id(jit).expiryTime(expiryTime).build();
+            InvalidToken invalidatedToken =
+                    InvalidToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidatedTokenRepository.save(invalidatedToken);
         } catch (AppException exception) {
@@ -140,8 +141,8 @@ public class AuthenticationService implements AuthenticationImp {
         var jit = signedJWT.getJWTClaimsSet().getJWTID();
         var expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
-        InvalidDateToken invalidatedToken =
-                InvalidDateToken.builder().id(jit).expiryTime(expiryTime).build();
+        InvalidToken invalidatedToken =
+                InvalidToken.builder().id(jit).expiryTime(expiryTime).build();
 
         invalidatedTokenRepository.save(invalidatedToken);
 
@@ -206,4 +207,12 @@ public class AuthenticationService implements AuthenticationImp {
 
         return stringJoiner.toString();
     }
+
+    @Override
+    public Account findByEmail() {
+        var context = SecurityContextHolder.getContext();
+        String email = context.getAuthentication().getName();
+        return accountRepo.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+    }
+
 }
