@@ -1,11 +1,11 @@
 package com.fpt.careermate.web.rest;
 
-import com.cloudinary.Cloudinary;
 import com.fpt.careermate.services.dto.response.ApiResponse;
+import com.fpt.careermate.services.storage.FirebaseStorageService;
 import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,24 +17,18 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class FileController {
 
-    @Value("${cloudinary.cloud-name:demo}")
-    String cloudName;
+    FirebaseStorageService firebaseStorageService;
 
-    @Value("${cloudinary.api-key:demo}")
-    String apiKey;
-
-    @Value("${cloudinary.api-secret:demo}")
-    String apiSecret;
-
-    // ADMIN ONLY - Image Upload to Cloudinary
+    // ADMIN ONLY - Image Upload to Firebase Storage
     @PostMapping("/upload/image")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Map<String, Object>> uploadImage(@RequestParam("image") MultipartFile file) {
-        log.info("Uploading image to Cloudinary: {}", file.getOriginalFilename());
+        log.info("Uploading image to Firebase Storage: {}", file.getOriginalFilename());
 
         // Validate file type
         if (!isImageFile(file)) {
@@ -45,25 +39,10 @@ public class FileController {
         }
 
         try {
-            // Initialize Cloudinary
-            Map<String, String> config = new HashMap<>();
-            config.put("cloud_name", cloudName);
-            config.put("api_key", apiKey);
-            config.put("api_secret", apiSecret);
-            config.put("secure", "true");
+            // Upload to Firebase Storage
+            Map<String, Object> uploadResult = firebaseStorageService.uploadFile(file, "careermate/blogs");
 
-            Cloudinary cloudinary = new Cloudinary(config);
-
-            // Upload parameters
-            Map<String, Object> params = new HashMap<>();
-            params.put("folder", "careermate/blogs");
-            params.put("resource_type", "image");
-
-            // Upload to Cloudinary
-            @SuppressWarnings("unchecked")
-            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
-
-            // Prepare response
+            // Prepare response (same format as before)
             Map<String, Object> result = new HashMap<>();
             result.put("imageUrl", uploadResult.get("secure_url"));
             result.put("publicId", uploadResult.get("public_id"));
@@ -72,16 +51,16 @@ public class FileController {
             result.put("width", uploadResult.get("width"));
             result.put("height", uploadResult.get("height"));
 
-            log.info("Image uploaded successfully: {}", uploadResult.get("public_id"));
+            log.info("Image uploaded successfully to Firebase: {}", uploadResult.get("public_id"));
 
             return ApiResponse.<Map<String, Object>>builder()
                     .code(1000)
-                    .message("Image uploaded successfully to Cloudinary")
+                    .message("Image uploaded successfully to Firebase Storage")
                     .result(result)
                     .build();
 
         } catch (Exception e) {
-            log.error("Cloudinary upload failed: {}", e.getMessage());
+            log.error("Firebase upload failed: {}", e.getMessage());
             return ApiResponse.<Map<String, Object>>builder()
                     .code(1005)
                     .message("Upload failed: " + e.getMessage())
@@ -95,50 +74,27 @@ public class FileController {
         try {
             // Decode URL-encoded public_id
             String decodedPublicId = URLDecoder.decode(publicId, StandardCharsets.UTF_8);
-            log.info("Deleting Cloudinary image: {}", decodedPublicId);
+            log.info("Deleting Firebase image: {}", decodedPublicId);
 
-            // Initialize Cloudinary with cleaner syntax
-            Cloudinary cloudinary = new Cloudinary(Map.of(
-                    "cloud_name", cloudName,
-                    "api_key", apiKey,
-                    "api_secret", apiSecret,
-                    "secure", "true"));
+            // Use Firebase service to delete the file
+            boolean deleted = firebaseStorageService.deleteFile(decodedPublicId);
 
-            // Remove file extension if present (.jpg, .png, etc.) - Cloudinary needs
-            // publicId without extension
-            String cleanPublicId = decodedPublicId.replaceFirst("\\.[^.]+$", "");
-
-            // If publicId doesn't contain folder path, prepend the default folder
-            // This is a fallback for legacy support, but frontend should send full path
-            if (!cleanPublicId.contains("/")) {
-                cleanPublicId = "careermate/blogs/" + cleanPublicId;
-                log.info("Prepending default folder path to publicId: {}", cleanPublicId);
-            }
-
-            // Delete from Cloudinary
-            @SuppressWarnings("unchecked")
-            Map<String, Object> result = cloudinary.uploader().destroy(cleanPublicId, Map.of());
-
-            String resultStatus = (String) result.get("result");
-            log.info("Cloudinary delete result for {}: {}", cleanPublicId, resultStatus);
-
-            if ("ok".equals(resultStatus)) {
+            if (deleted) {
                 return ApiResponse.<String>builder()
                         .code(1000)
                         .message("Image deleted successfully")
-                        .result("Deleted: " + cleanPublicId)
+                        .result("Deleted: " + decodedPublicId)
                         .build();
             } else {
-                log.warn("Cloudinary delete returned status: {} for publicId: {}", resultStatus, cleanPublicId);
+                log.warn("Firebase delete failed for publicId: {}", decodedPublicId);
                 return ApiResponse.<String>builder()
                         .code(1006)
                         .message("Image not found or already deleted")
-                        .result("Status: " + resultStatus)
                         .build();
             }
 
         } catch (Exception e) {
-            log.error("Cloudinary delete failed", e);
+            log.error("Firebase delete failed", e);
             return ApiResponse.<String>builder()
                     .code(1005)
                     .message("Delete failed: " + e.getMessage())
@@ -159,50 +115,27 @@ public class FileController {
                         .build();
             }
 
-            log.info("Deleting Cloudinary image via body: {}", publicId);
+            log.info("Deleting Firebase image via body: {}", publicId);
 
-            // Initialize Cloudinary with cleaner syntax
-            Cloudinary cloudinary = new Cloudinary(Map.of(
-                    "cloud_name", cloudName,
-                    "api_key", apiKey,
-                    "api_secret", apiSecret,
-                    "secure", "true"));
+            // Use Firebase service to delete the file
+            boolean deleted = firebaseStorageService.deleteFile(publicId);
 
-            // Remove file extension if present (.jpg, .png, etc.) - Cloudinary needs
-            // publicId without extension
-            String cleanPublicId = publicId.replaceFirst("\\.[^.]+$", "");
-
-            // If publicId doesn't contain folder path, prepend the default folder
-            // This is a fallback for legacy support, but frontend should send full path
-            if (!cleanPublicId.contains("/")) {
-                cleanPublicId = "careermate/blogs/" + cleanPublicId;
-                log.info("Prepending default folder path to publicId: {}", cleanPublicId);
-            }
-
-            // Delete from Cloudinary
-            @SuppressWarnings("unchecked")
-            Map<String, Object> result = cloudinary.uploader().destroy(cleanPublicId, Map.of());
-
-            String resultStatus = (String) result.get("result");
-            log.info("Cloudinary delete result for {}: {}", cleanPublicId, resultStatus);
-
-            if ("ok".equals(resultStatus)) {
+            if (deleted) {
                 return ApiResponse.<String>builder()
                         .code(1000)
                         .message("Image deleted successfully")
-                        .result("Deleted: " + cleanPublicId)
+                        .result("Deleted: " + publicId)
                         .build();
             } else {
-                log.warn("Cloudinary delete returned status: {} for publicId: {}", resultStatus, cleanPublicId);
+                log.warn("Firebase delete failed for publicId: {}", publicId);
                 return ApiResponse.<String>builder()
                         .code(1006)
                         .message("Image not found or already deleted")
-                        .result("Status: " + resultStatus)
                         .build();
             }
 
         } catch (Exception e) {
-            log.error("Cloudinary delete failed", e);
+            log.error("Firebase delete failed", e);
             return ApiResponse.<String>builder()
                     .code(1005)
                     .message("Delete failed: " + e.getMessage())

@@ -29,8 +29,10 @@ jwt:
   refreshable-duration: 604800 # in second
   # in seconds
 
-# Cloudinary Configuration
-cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
-  api-key: ${CLOUDINARY_API_KEY:demo}
-  api-secret: ${CLOUDINARY_API_SECRET:demo}
+# Firebase config
+firebase:
+  project-id: careermate-97d8c
+  bucket-name: careermate-97d8c.firebasestorage.app
+  credentials:
+    path: classpath:firebase-service-account.json
+    
