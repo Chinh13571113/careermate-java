@@ -1,5 +1,6 @@
 package com.fpt.careermate.services;
 
+import com.fpt.careermate.constant.StatusAccount;
 import com.fpt.careermate.domain.Account;
 import com.fpt.careermate.domain.InvalidToken;
 import com.fpt.careermate.repository.AccountRepo;
@@ -105,8 +106,9 @@ public class AuthenticationImp implements AuthenticationService {
 
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
 
-        if (!authenticated)
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (user.getStatus().equalsIgnoreCase(StatusAccount.INACTIVE) || user.getStatus().equalsIgnoreCase(StatusAccount.DELETED))
+            throw new AppException(ErrorCode.USER_INACTIVE);
+        if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         String accessToken = generateToken(user, false);
         String refreshToken = generateToken(user, true);
@@ -214,6 +216,7 @@ public class AuthenticationImp implements AuthenticationService {
                 .build();
     }
 
+
     @Override
     public String generateToken(Account account, boolean isRefresh) {
         long validDuration = (isRefresh) ? REFRESHABLE_DURATION : VALID_DURATION;
@@ -241,6 +244,7 @@ public class AuthenticationImp implements AuthenticationService {
             throw new RuntimeException(e);
         }
     }
+
 
     @Override
     public String buildScope(Account account) {
