@@ -22,7 +22,6 @@ public class Package {
     Long price;
     int durationDays;
 
-    // TODO: change TestCandidate after removing TestCandidate entity
     @OneToMany(mappedBy = "currentPackage")
-    List<TestCandidate> candidates;
+    List<Candidate> candidates;
 }

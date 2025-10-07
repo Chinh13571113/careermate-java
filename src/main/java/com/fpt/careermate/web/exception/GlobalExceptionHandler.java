@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @ControllerAdvice
 @Slf4j
@@ -60,6 +61,21 @@ public class GlobalExceptionHandler {
         body.put("errors", errors);
 
         return ResponseEntity.badRequest().body(body);
+    }
+
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse> handleInvalidJson(HttpMessageNotReadableException ex) {
+        log.error("Invalid JSON format: ", ex);
+
+        ErrorCode errorCode = ErrorCode.INVALID_JSON;
+
+        ApiResponse apiResponse = ApiResponse.builder()
+                .code(errorCode.getCode())
+                .message(errorCode.getMessage())
+                .build();
+
+        return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
     }
 
 }

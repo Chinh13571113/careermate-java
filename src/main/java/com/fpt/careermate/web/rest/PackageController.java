@@ -6,6 +6,7 @@ import com.fpt.careermate.services.dto.response.ApiResponse;
 import com.fpt.careermate.services.dto.response.PackageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,7 +27,7 @@ public class PackageController {
 
     @Operation(summary = "Create package")
     @PostMapping
-    public ApiResponse<PackageResponse> createPackage(@RequestBody PackageCreationRequest request) {
+    public ApiResponse<PackageResponse> createPackage(@Valid @RequestBody PackageCreationRequest request) {
         return ApiResponse.<PackageResponse>builder()
                 .result(packageImp.createPackage(request))
                 .code(200)

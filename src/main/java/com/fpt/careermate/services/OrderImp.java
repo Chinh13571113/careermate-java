@@ -1,9 +1,11 @@
 package com.fpt.careermate.services;
 
 import com.fpt.careermate.constant.StatusOrder;
+import com.fpt.careermate.domain.Account;
+import com.fpt.careermate.domain.Candidate;
 import com.fpt.careermate.domain.Order;
 import com.fpt.careermate.domain.Package;
-import com.fpt.careermate.domain.TestCandidate;
+import com.fpt.careermate.repository.CandidateRepo;
 import com.fpt.careermate.repository.OrderRepo;
 import com.fpt.careermate.repository.PackageRepo;
 import com.fpt.careermate.services.dto.request.OrderCreationRequest;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,23 +35,23 @@ public class OrderImp implements OrderService {
 
     OrderRepo orderRepo;
     PackageRepo packageRepo;
+    CandidateRepo candidateRepo;
     OrderMapper orderMapper;
+    AuthenticationImp authenticationImp;
     PaymentUtil paymentUtil;
 
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
     @Transactional
-    public String createOrder(OrderCreationRequest request) {
-        //TODO: check if candidate exists
-        TestCandidate candidate = new TestCandidate(1, null, null);
+    public String createOrder(int packageId) {
+        Candidate currentCandidate = getCurrentCandidate();
 
-        Package pkg = packageRepo.findById(request.getPackageId())
+        Package pkg = packageRepo.findById(packageId)
                 .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
         Order order = new Order();
-        // TODO: replace candidate with actual candidate
         order.setOrderCode(paymentUtil.generateOrderCodeUuid());
-        order.setCandidate(candidate);
+        order.setCandidate(currentCandidate);
         order.setCandidatePackage(pkg);
         order.setAmount(pkg.getPrice());
         order.setPackageNameSnapshot(pkg.getName());
@@ -93,8 +96,16 @@ public class OrderImp implements OrderService {
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
     public List<OrderResponse> myOrderList() {
-        int candidateId = 1; // TODO: replace with actual candidate id
-        List<Order> orders = orderRepo.findByCandidate_Id(candidateId);
+        Candidate currentCandidate = getCurrentCandidate();
+
+        List<Order> orders = orderRepo.findByCandidate_CandidateId(currentCandidate.getCandidateId());
         return orderMapper.toOrderResponseList(orders);
+    }
+
+    private Candidate getCurrentCandidate(){
+        Account currentAccount = authenticationImp.findByEmail();
+        Optional<Candidate> candidate = candidateRepo.findByAccountId(Integer.valueOf(currentAccount.getId()));
+        Candidate currentCandidate = candidate.get();
+        return currentCandidate;
     }
 }

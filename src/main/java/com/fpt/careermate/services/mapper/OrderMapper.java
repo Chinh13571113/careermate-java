@@ -9,7 +9,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
-    @Mapping(source = "candidate.id", target = "candidateId")
+    @Mapping(source = "candidate.candidateId", target = "candidateId")
     @Mapping(source = "candidatePackage.id", target = "packageId")
     OrderResponse toOrderResponse(Order order);
 

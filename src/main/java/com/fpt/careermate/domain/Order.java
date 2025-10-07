@@ -33,7 +33,7 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidate_id")
-    TestCandidate candidate;
+    Candidate candidate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "package_id")

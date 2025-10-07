@@ -26,9 +26,9 @@ public class OrderController {
 
     @Operation(summary = "Create order")
     @PostMapping
-    public ApiResponse<String> createOrder(@RequestBody OrderCreationRequest request) {
+    public ApiResponse<String> createOrder(@RequestParam String packageId) {
         return ApiResponse.<String>builder()
-                .result(orderImp.createOrder(request))
+                .result(orderImp.createOrder(Integer.parseInt(packageId)))
                 .code(200)
                 .message("success")
                 .build();
