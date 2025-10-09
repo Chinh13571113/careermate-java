@@ -81,7 +81,8 @@ public class AuthenticationImp implements AuthenticationService {
 
         var verified = signedJWT.verify(verifier);
 
-        if (!(verified && expiryTime.after(new Date()))) throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (!(verified && expiryTime.after(new Date())))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -119,16 +120,66 @@ public class AuthenticationImp implements AuthenticationService {
         try {
             var signToken = verifyToken(request.getToken());
 
-            String jit = signToken.getJWTClaimsSet().getJWTID();
-            Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+        // Handle backward compatibility - if old 'token' field is used
+        if (request.getToken() != null && !request.getToken().trim().isEmpty()) {
+            try {
+                // Try as access token first
+                var signToken = verifyToken(request.getToken(), false);
+                invalidateToken(signToken);
+                invalidatedCount++;
+                log.info("Token (as access token) invalidated successfully");
+            } catch (AppException e) {
+                try {
+                    // If access token fails, try as refresh token
+                    var signToken = verifyToken(request.getToken(), true);
+                    invalidateToken(signToken);
+                    invalidatedCount++;
+                    log.info("Token (as refresh token) invalidated successfully");
+                } catch (AppException ex) {
+                    log.info("Token already expired or invalid");
+                }
+            }
+        } else {
+            // Handle new format with separate access and refresh tokens
 
-            InvalidToken invalidatedToken =
-                    InvalidToken.builder().id(jit).expiryTime(expiryTime).build();
+            // Invalidate access token
+            if (request.getAccessToken() != null && !request.getAccessToken().trim().isEmpty()) {
+                try {
+                    var accessSignToken = verifyToken(request.getAccessToken(), false);
+                    invalidateToken(accessSignToken);
+                    invalidatedCount++;
+                    log.info("Access token invalidated successfully");
+                } catch (AppException e) {
+                    log.info("Access token already expired or invalid");
+                }
+            }
 
-            invalidatedTokenRepository.save(invalidatedToken);
-        } catch (AppException exception) {
-            log.info("Token already expired");
+            // Invalidate refresh token
+            if (request.getRefreshToken() != null && !request.getRefreshToken().trim().isEmpty()) {
+                try {
+                    var refreshSignToken = verifyToken(request.getRefreshToken(), true);
+                    invalidateToken(refreshSignToken);
+                    invalidatedCount++;
+                    log.info("Refresh token invalidated successfully");
+                } catch (AppException e) {
+                    log.info("Refresh token already expired or invalid");
+                }
+            }
         }
+
+        log.info("Logout completed. {} token(s) invalidated", invalidatedCount);
+    }
+
+    private void invalidateToken(SignedJWT signToken) throws ParseException {
+        String jit = signToken.getJWTClaimsSet().getJWTID();
+        Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+
+        InvalidToken invalidatedToken = InvalidToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
     }
 
     @Override
@@ -138,8 +189,7 @@ public class AuthenticationImp implements AuthenticationService {
         var jit = signedJWT.getJWTClaimsSet().getJWTID();
         var expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
-        InvalidToken invalidatedToken =
-                InvalidToken.builder().id(jit).expiryTime(expiryTime).build();
+        InvalidToken invalidatedToken = InvalidToken.builder().id(jit).expiryTime(expiryTime).build();
 
         invalidatedTokenRepository.save(invalidatedToken);
 
