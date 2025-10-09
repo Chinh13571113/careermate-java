@@ -64,9 +64,8 @@ public class SecurityConfig {
                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
-        httpSecurity .oauth2Login(oauth -> oauth
+        httpSecurity.oauth2Login(oauth -> oauth
                 .successHandler(oAuth2LoginSuccessHandler));
-
 
         return httpSecurity.build();
     }
