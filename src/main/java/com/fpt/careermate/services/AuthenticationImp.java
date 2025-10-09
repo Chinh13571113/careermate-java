@@ -117,53 +117,17 @@ public class AuthenticationImp implements AuthenticationService {
 
     @Override
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
-        try {
-            var signToken = verifyToken(request.getToken());
+        int invalidatedCount = 0;
 
-        // Handle backward compatibility - if old 'token' field is used
+        // Invalidate the provided token
         if (request.getToken() != null && !request.getToken().trim().isEmpty()) {
             try {
-                // Try as access token first
-                var signToken = verifyToken(request.getToken(), false);
+                var signToken = verifyToken(request.getToken());
                 invalidateToken(signToken);
                 invalidatedCount++;
-                log.info("Token (as access token) invalidated successfully");
+                log.info("Token invalidated successfully");
             } catch (AppException e) {
-                try {
-                    // If access token fails, try as refresh token
-                    var signToken = verifyToken(request.getToken(), true);
-                    invalidateToken(signToken);
-                    invalidatedCount++;
-                    log.info("Token (as refresh token) invalidated successfully");
-                } catch (AppException ex) {
-                    log.info("Token already expired or invalid");
-                }
-            }
-        } else {
-            // Handle new format with separate access and refresh tokens
-
-            // Invalidate access token
-            if (request.getAccessToken() != null && !request.getAccessToken().trim().isEmpty()) {
-                try {
-                    var accessSignToken = verifyToken(request.getAccessToken(), false);
-                    invalidateToken(accessSignToken);
-                    invalidatedCount++;
-                    log.info("Access token invalidated successfully");
-                } catch (AppException e) {
-                    log.info("Access token already expired or invalid");
-                }
-            }
-
-            // Invalidate refresh token
-            if (request.getRefreshToken() != null && !request.getRefreshToken().trim().isEmpty()) {
-                try {
-                    var refreshSignToken = verifyToken(request.getRefreshToken(), true);
-                    invalidateToken(refreshSignToken);
-                    invalidatedCount++;
-                    log.info("Refresh token invalidated successfully");
-                } catch (AppException e) {
-                    log.info("Refresh token already expired or invalid");
-                }
+                log.info("Token already expired or invalid");
             }
         }
 

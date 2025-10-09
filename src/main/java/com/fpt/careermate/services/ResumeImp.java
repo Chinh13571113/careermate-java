@@ -39,7 +39,7 @@ public class ResumeImp implements ResumeService {
         Account account = authenticationService.findByEmail();
 
         // Find candidate by authenticated account
-        Candidate candidate = candidateRepo.findByAccountId(account.getId())
+        Candidate candidate = candidateRepo.findByAccount_Id(account.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.CANDIDATE_NOT_FOUND));
 
 

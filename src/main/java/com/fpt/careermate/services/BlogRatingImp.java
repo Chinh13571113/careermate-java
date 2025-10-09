@@ -207,8 +207,8 @@ public class BlogRatingImp {
         Blog blog = blogRepo.findById(blogId)
                 .orElseThrow(() -> new IllegalArgumentException("Blog not found with ID: " + blogId));
 
-        Long totalRatings = blogRatingRepo.countByBlogId(blogId);
-        Double averageRating = blogRatingRepo.findAverageRatingByBlogId(blogId);
+        Long totalRatings = blogRatingRepo.countByBlog_Id(blogId);
+        Double averageRating = blogRatingRepo.findAverageRatingByBlog_Id(blogId);
 
         summary.put("blogId", blogId);
         summary.put("blogTitle", blog.getTitle());
