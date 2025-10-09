@@ -15,9 +15,17 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -131,5 +139,94 @@ public class BlogRatingImp {
         blogRepo.save(blog);
 
         log.info("Updated blog rating stats - Average: {}, Count: {}", averageRating, ratingCount);
+    }
+
+    // Admin management methods
+    public Page<BlogRating> getAllRatingsForAdmin(int page, int size, String sortBy, String sortDirection) {
+        log.info("Getting all ratings for admin - Page: {}, Size: {}, Sort: {} {}", page, size, sortBy, sortDirection);
+
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return blogRatingRepo.findAll(pageable);
+    }
+
+    public BlogRating getRatingById(Long id) {
+        log.info("Getting rating by ID for admin: {}", id);
+        return blogRatingRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Rating not found with ID: " + id));
+    }
+
+    public void deleteRatingAsAdmin(Long id) {
+        log.info("Admin deleting rating with ID: {}", id);
+
+        BlogRating rating = blogRatingRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Rating not found with ID: " + id));
+
+        Blog blog = rating.getBlog();
+        blogRatingRepo.delete(rating);
+
+        // Update blog stats after deletion
+        updateBlogRatingStats(blog);
+
+        log.info("Rating deleted successfully by admin");
+    }
+
+    public Map<String, Object> getRatingStatistics() {
+        log.info("Getting rating statistics for admin");
+
+        Map<String, Object> stats = new HashMap<>();
+
+        long totalRatings = blogRatingRepo.count();
+        stats.put("totalRatings", totalRatings);
+
+        // Get rating distribution
+        Map<Integer, Long> ratingDistribution = new HashMap<>();
+        for (int i = 1; i <= 5; i++) {
+            ratingDistribution.put(i, blogRatingRepo.countByRating(i));
+        }
+        stats.put("ratingDistribution", ratingDistribution);
+
+        // Calculate average rating across all blogs
+        Double overallAverageRating = blogRatingRepo.findOverallAverageRating();
+        stats.put("overallAverageRating", overallAverageRating != null ? overallAverageRating : 0.0);
+
+        // Get top rated blogs
+        List<Object[]> topRatedBlogs = blogRatingRepo.findTopRatedBlogs(PageRequest.of(0, 5));
+        stats.put("topRatedBlogs", topRatedBlogs);
+
+        log.info("Rating statistics calculated: {} total ratings", totalRatings);
+        return stats;
+    }
+
+    public Map<String, Object> getBlogRatingSummary(Long blogId) {
+        log.info("Getting rating summary for blog ID: {}", blogId);
+
+        Map<String, Object> summary = new HashMap<>();
+
+        Blog blog = blogRepo.findById(blogId)
+                .orElseThrow(() -> new IllegalArgumentException("Blog not found with ID: " + blogId));
+
+        Long totalRatings = blogRatingRepo.countByBlogId(blogId);
+        Double averageRating = blogRatingRepo.findAverageRatingByBlogId(blogId);
+
+        summary.put("blogId", blogId);
+        summary.put("blogTitle", blog.getTitle());
+        summary.put("totalRatings", totalRatings);
+        summary.put("averageRating", averageRating != null ? averageRating : 0.0);
+
+        // Get rating distribution for this blog
+        Map<Integer, Long> ratingDistribution = new HashMap<>();
+        for (int i = 1; i <= 5; i++) {
+            ratingDistribution.put(i, blogRatingRepo.countByBlogIdAndRating(blogId, i));
+        }
+        summary.put("ratingDistribution", ratingDistribution);
+
+        // Get recent ratings for this blog
+        List<BlogRating> recentRatings = blogRatingRepo.findByBlogIdOrderByCreatedAtDesc(blogId, PageRequest.of(0, 5));
+        summary.put("recentRatings", recentRatings);
+
+        log.info("Blog rating summary calculated for blog: {}", blogId);
+        return summary;
     }
 }

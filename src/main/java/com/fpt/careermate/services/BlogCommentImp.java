@@ -157,4 +157,80 @@ public class BlogCommentImp {
 
         log.info("Updated blog comment count: {}", commentCount);
     }
+
+    // Admin management methods
+    public Page<BlogCommentResponse> getAllCommentsForAdmin(Pageable pageable, Long blogId, String userEmail) {
+        log.info("Admin getting all comments - page: {}, blogId: {}, userEmail: {}",
+                pageable.getPageNumber(), blogId, userEmail);
+
+        Page<BlogComment> comments;
+        if (blogId != null && userEmail != null) {
+            comments = blogCommentRepo.findByBlogIdAndUserEmailContainingIgnoreCaseOrderByCreatedAtDesc(
+                    blogId, userEmail, pageable);
+        } else if (blogId != null) {
+            comments = blogCommentRepo.findByBlogIdOrderByCreatedAtDesc(blogId, pageable);
+        } else if (userEmail != null) {
+            comments = blogCommentRepo.findByUserEmailContainingIgnoreCaseOrderByCreatedAtDesc(userEmail, pageable);
+        } else {
+            comments = blogCommentRepo.findAllByOrderByCreatedAtDesc(pageable);
+        }
+
+        return comments.map(blogCommentMapper::toBlogCommentResponse);
+    }
+
+    @Transactional
+    public void deleteCommentAsAdmin(Long commentId) {
+        log.info("Admin deleting comment ID: {}", commentId);
+
+        BlogComment comment = blogCommentRepo.findById(commentId)
+                .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_EXISTED));
+
+        comment.setIsDeleted(true);
+        blogCommentRepo.save(comment);
+
+        // Update blog's comment count
+        updateBlogCommentCount(comment.getBlog());
+
+        log.info("Comment deleted by admin: {}", commentId);
+    }
+
+    @Transactional
+    public BlogCommentResponse hideComment(Long commentId) {
+        log.info("Admin hiding comment ID: {}", commentId);
+
+        BlogComment comment = blogCommentRepo.findById(commentId)
+                .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_EXISTED));
+
+        comment.setIsDeleted(true); // Using isDeleted as hidden flag
+        blogCommentRepo.save(comment);
+
+        return blogCommentMapper.toBlogCommentResponse(comment);
+    }
+
+    @Transactional
+    public BlogCommentResponse showComment(Long commentId) {
+        log.info("Admin showing comment ID: {}", commentId);
+
+        BlogComment comment = blogCommentRepo.findById(commentId)
+                .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_EXISTED));
+
+        comment.setIsDeleted(false);
+        blogCommentRepo.save(comment);
+
+        return blogCommentMapper.toBlogCommentResponse(comment);
+    }
+
+    public Object getCommentStatistics() {
+        log.info("Admin getting comment statistics");
+
+        Long totalComments = blogCommentRepo.count();
+        Long visibleComments = blogCommentRepo.countByIsDeletedFalse();
+        Long hiddenComments = blogCommentRepo.countByIsDeletedTrue();
+
+        return new Object() {
+            public final Long total = totalComments;
+            public final Long visible = visibleComments;
+            public final Long hidden = hiddenComments;
+        };
+    }
 }
