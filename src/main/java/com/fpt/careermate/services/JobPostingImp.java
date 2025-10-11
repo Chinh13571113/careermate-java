@@ -1,11 +1,12 @@
 package com.fpt.careermate.services;
 
 import com.fpt.careermate.constant.StatusJobPosting;
-import com.fpt.careermate.domain.Account;
-import com.fpt.careermate.domain.JobPosting;
-import com.fpt.careermate.domain.Recruiter;
+import com.fpt.careermate.domain.*;
+import com.fpt.careermate.repository.JdSkillRepo;
+import com.fpt.careermate.repository.JobDescriptionRepo;
 import com.fpt.careermate.repository.JobPostingRepo;
 import com.fpt.careermate.repository.RecruiterRepo;
+import com.fpt.careermate.services.dto.request.JdSkillRequest;
 import com.fpt.careermate.services.dto.request.JobPostingCreationRequest;
 import com.fpt.careermate.services.dto.response.JobPostingForAdminResponse;
 import com.fpt.careermate.services.dto.response.JobPostingForRecruiterResponse;
@@ -22,8 +23,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +36,8 @@ public class JobPostingImp implements JobPostingService {
 
     JobPostingRepo jobPostingRepo;
     RecruiterRepo recruiterRepo;
+    JdSkillRepo jdSkillRepo;
+    JobDescriptionRepo jobDescriptionRepo;
     JobPostingMapper jobPostingMapper;
     AuthenticationImp authenticationImp;
 
@@ -54,6 +59,28 @@ public class JobPostingImp implements JobPostingService {
         jobPosting.setCreateAt(LocalDate.now());
         jobPosting.setRecruiter(recruiter);
         jobPosting.setStatus(StatusJobPosting.PENDING);
+
+        jobPostingRepo.save(jobPosting);
+
+        Set<JobDescription> jobDescriptions = new HashSet<>();
+        for(JdSkillRequest skillReq : request.getJdSkills()) {
+//            a) find jdSkill by id
+            Optional<JdSkill> exstingJdSkill = jdSkillRepo.findById(skillReq.getId());
+            JdSkill jdSkill = exstingJdSkill.get();
+
+//            b) Create JobDescription link
+            JobDescription jd = new JobDescription();
+            jd.setJobPosting(jobPosting);
+            jd.setJdSkill(jdSkill);
+            jd.setMustToHave(skillReq.isMustToHave());
+
+            jobDescriptions.add(jd);
+        }
+
+//        Save all JobDescription
+        jobDescriptionRepo.saveAll(jobDescriptions);
+
+        jobPosting.setJobDescriptions(jobDescriptions);
 
         jobPostingRepo.save(jobPosting);
     }

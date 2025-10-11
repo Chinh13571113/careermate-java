@@ -41,7 +41,7 @@ public class JobPosting {
     @Column(nullable = false)
     LocalDate createAt;
 
-    @OneToMany(mappedBy = "jobPosting")
+    @OneToMany(mappedBy = "jobPosting", cascade = CascadeType.ALL, orphanRemoval = true)
     Set<JobDescription> jobDescriptions;
 
     @ManyToOne
