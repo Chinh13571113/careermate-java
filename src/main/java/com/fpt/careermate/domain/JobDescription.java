@@ -26,5 +26,5 @@ public class JobDescription {
 
     @ManyToOne
     @JoinColumn(name = "skill_id", nullable = false)
-    Skill skill;
+    JdSkill jdSkill;
 }

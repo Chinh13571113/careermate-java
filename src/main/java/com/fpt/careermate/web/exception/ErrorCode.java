@@ -33,8 +33,8 @@ public enum ErrorCode {
     INVALID_LOGO_URL(4001, "Logo URL is not reachable", HttpStatus.BAD_REQUEST),
     RECRUITER_ALREADY_EXISTS(4002, "You have already created a recruiter profile", HttpStatus.BAD_REQUEST),
 
-    // 50xx: Skill
-    SKILL_EXISTED(5000, "Skill existed", HttpStatus.BAD_REQUEST),
+    // 50xx: JdSkill
+    SKILL_EXISTED(5000, "JdSkill existed", HttpStatus.BAD_REQUEST),
 
     // 60xx: Job Posting
     JOB_POSTING_NOT_FOUND(6000, "Job posting not found", HttpStatus.NOT_FOUND),

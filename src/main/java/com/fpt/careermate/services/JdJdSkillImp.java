@@ -1,10 +1,10 @@
 package com.fpt.careermate.services;
 
-import com.fpt.careermate.domain.Skill;
-import com.fpt.careermate.repository.SkillRepo;
-import com.fpt.careermate.services.dto.response.SkillResponse;
-import com.fpt.careermate.services.impl.SkillService;
-import com.fpt.careermate.services.mapper.SkillMapper;
+import com.fpt.careermate.domain.JdSkill;
+import com.fpt.careermate.repository.JdSkillRepo;
+import com.fpt.careermate.services.dto.response.JdSkillResponse;
+import com.fpt.careermate.services.impl.JdSkillService;
+import com.fpt.careermate.services.mapper.JdSkillMapper;
 import com.fpt.careermate.web.exception.AppException;
 import com.fpt.careermate.web.exception.ErrorCode;
 import lombok.AccessLevel;
@@ -21,27 +21,27 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class SkillImp implements SkillService {
+public class JdJdSkillImp implements JdSkillService {
 
-    SkillRepo skillRepo;
-    SkillMapper skillMapper;
+    JdSkillRepo jdSkillRepo;
+    JdSkillMapper jdSkillMapper;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Override
     public void createSkill(String name) {
-        // Check skill name
-        Optional<Skill> exSkill = skillRepo.findSkillByName(name);
+        // Check jdSkill name
+        Optional<JdSkill> exSkill = jdSkillRepo.findSkillByName(name);
         if (exSkill.isPresent()) throw new AppException(ErrorCode.SKILL_EXISTED);
 
-        Skill skill = new Skill();
-        skill.setName(name);
-        skillRepo.save(skill);
+        JdSkill jdSkill = new JdSkill();
+        jdSkill.setName(name);
+        jdSkillRepo.save(jdSkill);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @Override
-    public List<SkillResponse> getAllSkill() {
-        return skillMapper.toSetSkillResponse(skillRepo.findAll());
+    public List<JdSkillResponse> getAllSkill() {
+        return jdSkillMapper.toSetSkillResponse(jdSkillRepo.findAll());
     }
 
 }

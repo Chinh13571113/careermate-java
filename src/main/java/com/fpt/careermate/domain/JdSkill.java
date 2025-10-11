@@ -13,8 +13,8 @@ import java.util.Set;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "skills")
-public class Skill {
+@Entity(name = "jd_skills")
+public class JdSkill {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
@@ -22,7 +22,7 @@ public class Skill {
     @Column(length = 100, nullable = false)
     String name;
 
-    @OneToMany(mappedBy = "skill")
+    @OneToMany(mappedBy = "jdSkill")
     Set<JobDescription> jobDescriptions;
 
 }
