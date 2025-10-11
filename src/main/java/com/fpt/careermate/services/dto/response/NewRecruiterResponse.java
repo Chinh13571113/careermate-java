@@ -3,7 +3,6 @@ package com.fpt.careermate.services.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -13,7 +12,6 @@ import java.util.Set;
 public class NewRecruiterResponse {
 
     int id;
-    String fullName;
     String companyName;
     Float rating;
 

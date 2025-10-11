@@ -14,10 +14,6 @@ public class RecruiterCreationRequest {
 
     @NotBlank
     @Size(min = 2, max = 100)
-    String fullName;
-
-    @NotBlank
-    @Size(min = 2, max = 100)
     String companyName;
 
     @NotBlank

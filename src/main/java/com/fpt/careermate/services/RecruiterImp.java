@@ -1,5 +1,6 @@
 package com.fpt.careermate.services;
 
+import com.fpt.careermate.domain.Account;
 import com.fpt.careermate.domain.Recruiter;
 import com.fpt.careermate.repository.RecruiterRepo;
 import com.fpt.careermate.services.dto.request.RecruiterCreationRequest;
@@ -34,6 +35,12 @@ public class RecruiterImp implements RecruiterService {
         if(!urlValidator.isWebsiteReachable(request.getWebsite())) throw new AppException(ErrorCode.INVALID_WEBSITE);
         // Check logo URL
         if(!urlValidator.isImageUrlValid(request.getLogoUrl())) throw new AppException(ErrorCode.INVALID_LOGO_URL);
+
+        // Check duplicate recruiter for the account
+        recruiterRepo.findByAccount_Id(authenticationImp.findByEmail().getId())
+                .ifPresent(recruiter -> {
+                    throw new AppException(ErrorCode.RECRUITER_ALREADY_EXISTS);
+                });
 
         Recruiter recruiter = recruiterMapper.toRecruiter(request);
         recruiter.setAccount(authenticationImp.findByEmail());

@@ -31,6 +31,7 @@ public enum ErrorCode {
     // 40xx: Recruiter
     INVALID_WEBSITE(4000, "Website is not reachable", HttpStatus.BAD_REQUEST),
     INVALID_LOGO_URL(4001, "Logo URL is not reachable", HttpStatus.BAD_REQUEST),
+    RECRUITER_ALREADY_EXISTS(4002, "You have already created a recruiter profile", HttpStatus.BAD_REQUEST),
 
     // 50xx: Skill
     SKILL_EXISTED(5000, "Skill existed", HttpStatus.BAD_REQUEST),

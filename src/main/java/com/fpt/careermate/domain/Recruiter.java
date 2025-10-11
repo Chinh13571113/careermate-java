@@ -25,10 +25,6 @@ public class Recruiter {
 
     @Size(max = 200)
     @Column(nullable = false)
-    String fullName;
-
-    @Size(max = 200)
-    @Column(nullable = false)
     String companyName;
 
     @Size(max = 255)
