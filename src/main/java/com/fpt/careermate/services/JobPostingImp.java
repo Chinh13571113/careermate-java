@@ -158,6 +158,23 @@ public class JobPostingImp implements JobPostingService {
         jobPostingRepo.save(jobPosting);
     }
 
+    // Recruiter delete job posting
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Override
+    public void deleteJobPosting(int id) {
+        JobPosting jobPosting = findJobPostingEntityForRecruiterById(id);
+
+        // Check job posting status
+        if(Set.of(
+                StatusJobPosting.DELETED,
+                StatusJobPosting.ACTIVE,
+                StatusJobPosting.PAUSED
+        ).contains(jobPosting.getStatus())) throw new AppException(ErrorCode.CANNOT_DELETE_JOB_POSTING);
+
+        jobPosting.setStatus(StatusJobPosting.DELETED);
+        jobPostingRepo.save(jobPosting);
+    }
+
     private JobPosting findJobPostingEntityForRecruiterById(int id){
         Recruiter recruiter = getMyRecruiter();
 

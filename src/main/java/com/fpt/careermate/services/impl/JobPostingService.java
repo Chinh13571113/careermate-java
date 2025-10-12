@@ -11,4 +11,5 @@ public interface JobPostingService {
     List<JobPostingForRecruiterResponse> getAllJobPostingForRecruiter();
     JobPostingForRecruiterResponse getJobPostingDetailForRecruiter(int id);
     void updateJobPosting(int id, JobPostingCreationRequest request);
+    void deleteJobPosting(int id);
 }

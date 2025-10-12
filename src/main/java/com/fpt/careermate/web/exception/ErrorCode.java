@@ -48,6 +48,7 @@ public enum ErrorCode {
     DUPLICATE_JOB_POSTING_TITLE(6009, "Job posting title already exists", HttpStatus.BAD_REQUEST),
     JOB_POSTING_FORBIDDEN(6010, "You are not allowed to access this job posting", HttpStatus.FORBIDDEN),
     JD_SKILL_NOT_FOUND(6011, "JdSkill not found", HttpStatus.NOT_FOUND),
+    CANNOT_DELETE_JOB_POSTING(6012, "Cannot delete job posting if status is ACTIVE or EXPIRED or PAUSED", HttpStatus.FORBIDDEN),
 
     BLOG_NOT_FOUND(1010, "Blog not found", HttpStatus.NOT_FOUND),
     BLOG_INVALID_STATUS(1011, "Invalid blog status", HttpStatus.BAD_REQUEST),

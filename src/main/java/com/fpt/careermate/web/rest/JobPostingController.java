@@ -72,4 +72,15 @@ public class JobPostingController {
                 .build();
     }
 
+    @DeleteMapping("/recruiter/{id}")
+    @Operation(summary = "Recruiter can delete job postings of the current recruiter with PENDING or REJECTED or EXPIRED status")
+    ApiResponse<JobPostingForRecruiterResponse> deleteJobPostingForRecruiter(@PathVariable int id) {
+        jobPostingImp.deleteJobPosting(id);
+
+        return ApiResponse.<JobPostingForRecruiterResponse>builder()
+                .code(200)
+                .message("success")
+                .build();
+    }
+
 }
