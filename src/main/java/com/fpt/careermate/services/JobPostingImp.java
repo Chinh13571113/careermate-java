@@ -12,6 +12,7 @@ import com.fpt.careermate.services.dto.response.JobPostingForRecruiterResponse;
 import com.fpt.careermate.services.dto.response.JobPostingSkillResponse;
 import com.fpt.careermate.services.impl.JobPostingService;
 import com.fpt.careermate.services.mapper.JobPostingMapper;
+import com.fpt.careermate.util.JobPostingValidator;
 import com.fpt.careermate.web.exception.AppException;
 import com.fpt.careermate.web.exception.ErrorCode;
 import lombok.AccessLevel;
@@ -39,18 +40,15 @@ public class JobPostingImp implements JobPostingService {
     JobDescriptionRepo jobDescriptionRepo;
     JobPostingMapper jobPostingMapper;
     AuthenticationImp authenticationImp;
+    JobPostingValidator jobPostingValidator;
 
     // Recruiter create job posting
     @PreAuthorize("hasRole('RECRUITER')")
     @Override
     public void createJobPosting(JobPostingCreationRequest request) {
-        // Check expiration date
-        if (!request.getExpirationDate().isAfter(LocalDate.now())) throw new AppException(ErrorCode.INVALID_EXPIRATION_DATE);
-        // Check duplicate title
-        jobPostingRepo.findByTitle(request.getTitle())
-                .ifPresent(jobPosting -> {
-                    throw new AppException(ErrorCode.DUPLICATE_JOB_POSTING_TITLE);
-                });
+        // Validate request
+        jobPostingValidator.checkDuplicateJobPostingTitle(request.getTitle());
+        jobPostingValidator.validateExpirationDate(request.getExpirationDate());
 
         Recruiter recruiter = getMyRecruiter();
 
@@ -110,6 +108,54 @@ public class JobPostingImp implements JobPostingService {
         jpResponse.setSkills(jobPostingSkillResponses);
 
         return jpResponse;
+    }
+
+    // Recruiter update job posting
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Override
+    public void updateJobPosting(int id, JobPostingCreationRequest request) {
+        JobPosting jobPosting = findJobPostingEntityForRecruiterById(id);
+
+        // Check job posting status
+        if(Set.of(
+                StatusJobPosting.DELETED,
+                StatusJobPosting.ACTIVE,
+                StatusJobPosting.PAUSED,
+                StatusJobPosting.EXPIRED
+        ).contains(jobPosting.getStatus())) throw new AppException(ErrorCode.CANNOT_MODIFY_JOB_POSTING);
+
+        // Validate request
+        jobPostingValidator.checkDuplicateJobPostingTitleAndNotCurrentRecruiter(request.getTitle(), jobPosting.getRecruiter().getId());
+        jobPostingValidator.validateExpirationDate(request.getExpirationDate());
+        // Validate JdSkill exist
+        jobPostingValidator.validateJdSkill(request.getJdSkills());
+
+        // Remove all old job descriptions
+        List<JobDescription> jobDescriptions = jobDescriptionRepo.findByJobPosting_Id(jobPosting.getId());
+        jobDescriptionRepo.deleteAll(jobDescriptions);
+
+        // Update job posting
+        jobPosting.setTitle(request.getTitle());
+        jobPosting.setDescription(request.getDescription());
+        jobPosting.setAddress(request.getAddress());
+        jobPosting.setExpirationDate(request.getExpirationDate());
+
+        // Add new job descriptions
+        Set<JobDescription> newJobDescriptions = new HashSet<>();
+        request.getJdSkills().forEach(jd -> {
+            Optional<JdSkill> existingJdSkill = jdSkillRepo.findById(jd.getId());
+            JdSkill jdSkill = existingJdSkill.get();
+
+            JobDescription jobDescription = new JobDescription();
+            jobDescription.setJobPosting(jobPosting);
+            jobDescription.setJdSkill(jdSkill);
+            jobDescription.setMustToHave(jd.isMustToHave());
+
+            newJobDescriptions.add(jobDescription);
+        });
+        jobPosting.setJobDescriptions(newJobDescriptions);
+
+        jobPostingRepo.save(jobPosting);
     }
 
     private JobPosting findJobPostingEntityForRecruiterById(int id){

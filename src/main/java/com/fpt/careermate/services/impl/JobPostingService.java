@@ -10,4 +10,5 @@ public interface JobPostingService {
     void createJobPosting(JobPostingCreationRequest request);
     List<JobPostingForRecruiterResponse> getAllJobPostingForRecruiter();
     JobPostingForRecruiterResponse getJobPostingDetailForRecruiter(int id);
+    void updateJobPosting(int id, JobPostingCreationRequest request);
 }

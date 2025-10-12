@@ -58,4 +58,18 @@ public class JobPostingController {
                 .build();
     }
 
+    @PutMapping("/recruiter/{id}")
+    @Operation(summary = "Recruiter can update job postings detail of the current recruiter with PENDING or REJECTED status")
+    ApiResponse<JobPostingForRecruiterResponse> updateJobPostingDetailForRecruiter(
+            @NotNull @PathVariable int id,
+            @RequestBody JobPostingCreationRequest request
+    ) {
+        jobPostingImp.updateJobPosting(id, request);
+
+        return ApiResponse.<JobPostingForRecruiterResponse>builder()
+                .code(200)
+                .message("success")
+                .build();
+    }
+
 }

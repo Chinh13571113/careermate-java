@@ -38,7 +38,7 @@ public enum ErrorCode {
 
     // 60xx: Job Posting
     JOB_POSTING_NOT_FOUND(6000, "Job posting not found", HttpStatus.NOT_FOUND),
-    CANNOT_MODIFY_JOB_POSTING(6001, "Cannot modify job posting if status is CLOSED or EXPIRED", HttpStatus.FORBIDDEN),
+    CANNOT_MODIFY_JOB_POSTING(6001, "Cannot modify job posting if status is DELETED or ACTIVE or PAUSED or EXPIRED", HttpStatus.FORBIDDEN),
     CANNOT_APPLY_TO_JOB_POSTING(6002, "Cannot apply to job posting if status is not OPEN", HttpStatus.FORBIDDEN),
     ALREADY_APPLIED_TO_JOB_POSTING(6003, "You have already applied to this job posting", HttpStatus.BAD_REQUEST),
     JOB_POSTING_EXPIRED(6005, "Job posting is expired", HttpStatus.BAD_REQUEST),
@@ -47,6 +47,7 @@ public enum ErrorCode {
     INVALID_EXPIRATION_DATE(6008, "Expiration date must be in the future", HttpStatus.BAD_REQUEST),
     DUPLICATE_JOB_POSTING_TITLE(6009, "Job posting title already exists", HttpStatus.BAD_REQUEST),
     JOB_POSTING_FORBIDDEN(6010, "You are not allowed to access this job posting", HttpStatus.FORBIDDEN),
+    JD_SKILL_NOT_FOUND(6011, "JdSkill not found", HttpStatus.NOT_FOUND),
 
     BLOG_NOT_FOUND(1010, "Blog not found", HttpStatus.NOT_FOUND),
     BLOG_INVALID_STATUS(1011, "Invalid blog status", HttpStatus.BAD_REQUEST),
