@@ -83,4 +83,16 @@ public class JobPostingController {
                 .build();
     }
 
+    @PatchMapping("/recruiter/{id}/pause")
+    @Operation(summary = "Recruiter can pause job postings of the current recruiter with ACTIVE status")
+    ApiResponse<String> pauseJobPostingForRecruiter(@PathVariable int id) {
+        jobPostingImp.pauseJobPosting(id);
+
+        return ApiResponse.<String>builder()
+                .code(200)
+                .message("success")
+                .build();
+
+    }
+
 }

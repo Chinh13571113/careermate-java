@@ -175,6 +175,19 @@ public class JobPostingImp implements JobPostingService {
         jobPostingRepo.save(jobPosting);
     }
 
+    // Recruiter pause job posting
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Override
+    public void pauseJobPosting(int id) {
+        JobPosting jobPosting = findJobPostingEntityForRecruiterById(id);
+
+        // Check job posting status
+        if(!jobPosting.getStatus().equals(StatusJobPosting.ACTIVE)) throw new AppException(ErrorCode.CANNOT_PAUSE_JOB_POSTING);
+
+        jobPosting.setStatus(StatusJobPosting.PAUSED);
+        jobPostingRepo.save(jobPosting);
+    }
+
     private JobPosting findJobPostingEntityForRecruiterById(int id){
         Recruiter recruiter = getMyRecruiter();
 

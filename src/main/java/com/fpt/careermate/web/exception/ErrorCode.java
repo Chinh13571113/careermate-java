@@ -43,7 +43,7 @@ public enum ErrorCode {
     ALREADY_APPLIED_TO_JOB_POSTING(6003, "You have already applied to this job posting", HttpStatus.BAD_REQUEST),
     JOB_POSTING_EXPIRED(6005, "Job posting is expired", HttpStatus.BAD_REQUEST),
     CANDIDATE_PROFILE_INCOMPLETE(6006, "Your profile is incomplete. Please complete your profile before applying", HttpStatus.BAD_REQUEST),
-    CANNOT_CLOSE_JOB_POSTING(6007, "Cannot close job posting if status is not OPEN", HttpStatus.FORBIDDEN),
+    CANNOT_PAUSE_JOB_POSTING(6007, "Cannot pause job posting if status is not ACTIVE", HttpStatus.FORBIDDEN),
     INVALID_EXPIRATION_DATE(6008, "Expiration date must be in the future", HttpStatus.BAD_REQUEST),
     DUPLICATE_JOB_POSTING_TITLE(6009, "Job posting title already exists", HttpStatus.BAD_REQUEST),
     JOB_POSTING_FORBIDDEN(6010, "You are not allowed to access this job posting", HttpStatus.FORBIDDEN),
