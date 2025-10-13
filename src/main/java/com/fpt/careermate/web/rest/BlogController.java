@@ -5,6 +5,8 @@ import com.fpt.careermate.services.dto.request.BlogCreationRequest;
 import com.fpt.careermate.services.dto.request.BlogUpdateRequest;
 import com.fpt.careermate.services.dto.response.ApiResponse;
 import com.fpt.careermate.services.dto.response.BlogResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,7 +23,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/blogs")
+@RequestMapping("/api/blogs")
+@Tag(name = "Blog", description = "APIs for managing blogs")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
@@ -32,6 +35,7 @@ public class BlogController {
 
         @PostMapping
         @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Create Blog", description = "Create a new blog post (Admin only)")
         ApiResponse<BlogResponse> createBlog(@RequestBody BlogCreationRequest request) {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                 String email = authentication.getName();
@@ -43,6 +47,7 @@ public class BlogController {
 
         @PutMapping("/{blogId}")
         @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Update Blog", description = "Update an existing blog post (Admin only)")
         ApiResponse<BlogResponse> updateBlog(
                         @PathVariable Long blogId,
                         @RequestBody BlogUpdateRequest request) {
@@ -53,6 +58,7 @@ public class BlogController {
 
         @DeleteMapping("/{blogId}")
         @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Delete Blog", description = "Delete a blog post by its ID (Admin only)")
         ApiResponse<Void> deleteBlog(@PathVariable Long blogId) {
                 blogImp.deleteBlog(blogId);
                 return ApiResponse.<Void>builder()
@@ -62,6 +68,7 @@ public class BlogController {
 
         @PutMapping("/{blogId}/publish")
         @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Publish Blog", description = "Publish a blog post (Admin only)")
         ApiResponse<BlogResponse> publishBlog(@PathVariable Long blogId) {
                 return ApiResponse.<BlogResponse>builder()
                                 .result(blogImp.publishBlog(blogId))
@@ -78,6 +85,7 @@ public class BlogController {
 
         @PutMapping("/{blogId}/archive")
         @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Archive Blog", description = "Archive a blog post (Admin only)")
         ApiResponse<BlogResponse> archiveBlog(@PathVariable Long blogId) {
                 return ApiResponse.<BlogResponse>builder()
                                 .result(blogImp.archiveBlog(blogId))
@@ -86,6 +94,7 @@ public class BlogController {
 
         @PutMapping("/{blogId}/unarchive")
         @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Unarchive Blog", description = "Unarchive a blog post (Admin only)")
         ApiResponse<BlogResponse> unarchiveBlog(@PathVariable Long blogId) {
                 return ApiResponse.<BlogResponse>builder()
                                 .result(blogImp.unarchiveBlog(blogId))
@@ -95,6 +104,7 @@ public class BlogController {
         // PUBLIC - Read-Only Endpoints (No Authentication Required)
 
         @GetMapping("/{blogId}")
+        @Operation(summary = "Get Blog by ID", description = "Retrieve a blog post by its ID")
         ApiResponse<BlogResponse> getBlogById(@PathVariable Long blogId) {
                 blogImp.incrementViewCount(blogId);
                 return ApiResponse.<BlogResponse>builder()
@@ -103,6 +113,7 @@ public class BlogController {
         }
 
         @GetMapping
+        @Operation(summary = "Get All Blogs", description = "Retrieve all blog posts with pagination and sorting")
         ApiResponse<Page<BlogResponse>> getAllBlogs(
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
@@ -120,6 +131,7 @@ public class BlogController {
         }
 
         @GetMapping("/status/{status}")
+        @Operation(summary = "Get Blogs by Status", description = "Retrieve blog posts filtered by status with pagination and sorting")
         ApiResponse<Page<BlogResponse>> getBlogsByStatus(
                         @PathVariable String status,
                         @RequestParam(defaultValue = "0") int page,
@@ -138,6 +150,7 @@ public class BlogController {
         }
 
         @GetMapping("/category/{category}")
+        @Operation(summary = "Get Blogs by Category", description = "Retrieve blog posts filtered by category with pagination and sorting")
         ApiResponse<Page<BlogResponse>> getBlogsByCategory(
                         @PathVariable String category,
                         @RequestParam(defaultValue = "0") int page,
@@ -156,6 +169,7 @@ public class BlogController {
         }
 
         @GetMapping("/author/{authorId}")
+        @Operation(summary = "Get Blogs by Author", description = "Retrieve blog posts filtered by author ID with pagination and sorting")
         ApiResponse<Page<BlogResponse>> getBlogsByAuthor(
                         @PathVariable int authorId,
                         @RequestParam(defaultValue = "0") int page,
@@ -174,6 +188,7 @@ public class BlogController {
         }
 
         @GetMapping("/search")
+        @Operation(summary = "Search Blogs", description = "Search blog posts by keyword and/or status with pagination and sorting")
         ApiResponse<Page<BlogResponse>> searchBlogs(
                         @RequestParam(required = false) String keyword,
                         @RequestParam(required = false) String status,
@@ -193,6 +208,7 @@ public class BlogController {
         }
 
         @GetMapping("/categories")
+        @Operation(summary = "Get All Categories", description = "Retrieve a list of all blog categories")
         ApiResponse<List<String>> getAllCategories() {
                 return ApiResponse.<List<String>>builder()
                                 .result(blogImp.getAllCategories())

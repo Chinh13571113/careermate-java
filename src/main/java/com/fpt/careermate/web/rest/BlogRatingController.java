@@ -4,6 +4,9 @@ import com.fpt.careermate.services.BlogRatingImp;
 import com.fpt.careermate.services.dto.request.BlogRatingRequest;
 import com.fpt.careermate.services.dto.response.ApiResponse;
 import com.fpt.careermate.services.dto.response.BlogRatingResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.models.annotations.OpenAPI30;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/blogs/{blogId}/ratings")
+@Tag(name = "Blog Rating", description = "Endpoints for managing blog ratings")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
@@ -22,6 +26,7 @@ public class BlogRatingController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Rate a Blog", description = "Submit or update a rating for a specific blog post.")
     public ApiResponse<BlogRatingResponse> rateBlog(
             @PathVariable Long blogId,
             @Valid @RequestBody BlogRatingRequest request) {
