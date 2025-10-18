@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -44,7 +45,7 @@ public class OrderController {
 
     @Operation(summary = "Delete order by ID")
     @DeleteMapping("/{id}")
-    public ApiResponse<String> deleteOrder(@PathVariable int id) {
+    public ApiResponse<String> deleteOrder(@Positive @PathVariable int id) {
         orderImp.deleteOrder(id);
         return ApiResponse.<String>builder()
                 .result("")
@@ -55,7 +56,7 @@ public class OrderController {
 
     @Operation(summary = "Check order status")
     @GetMapping("/status/{id}")
-    public ApiResponse<String> checkOrderStatus(@PathVariable int id) {
+    public ApiResponse<String> checkOrderStatus(@Positive @PathVariable int id) {
         return ApiResponse.<String>builder()
                 .result(orderImp.checkOrderStatus(id))
                 .code(200)
@@ -73,7 +74,7 @@ public class OrderController {
                 .build();
     }
 
-    @Operation(summary = "Get order list for candiate")
+    @Operation(summary = "Get order list for candidate")
     @GetMapping("/my-order")
     public ApiResponse<List<OrderResponse>> myOrderList() {
         return ApiResponse.<List<OrderResponse>>builder()

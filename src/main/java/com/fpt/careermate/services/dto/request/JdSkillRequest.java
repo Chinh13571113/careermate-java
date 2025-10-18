@@ -1,6 +1,6 @@
 package com.fpt.careermate.services.dto.request;
 
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -9,11 +9,11 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderCreationRequest {
+public class JdSkillRequest {
 
-    @Positive
-    int packageId;
+    @NotBlank
+    int id;
 
-    @Positive
-    int candidateId;
+    boolean mustToHave;
+
 }
