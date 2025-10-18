@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "API-Pregnancy System ",
+                title = "API-CareerMate System ",
                 version = "1.0",
                 description = "REST API description...",
 
