@@ -12,7 +12,8 @@ import lombok.experimental.FieldDefaults;
 public class SkillRequest {
     @NotBlank(message = "Skill type is required")
     String skillType;
-
+    @NotBlank(message = "Skill name is required")
+    String skillName;
     Integer yearOfExperience;
 }
 
