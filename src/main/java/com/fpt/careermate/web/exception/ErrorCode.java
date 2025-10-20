@@ -1,12 +1,10 @@
 package com.fpt.careermate.web.exception;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 
 @Getter
-
 public enum ErrorCode {
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_JSON(9998, "Invalid JSON format or missing request body", HttpStatus.BAD_REQUEST),
@@ -31,6 +29,9 @@ public enum ErrorCode {
     INVALID_WEBSITE(4000, "Website is not reachable", HttpStatus.BAD_REQUEST),
     INVALID_LOGO_URL(4001, "Logo URL is not reachable", HttpStatus.BAD_REQUEST),
     RECRUITER_ALREADY_EXISTS(4002, "You have already created a recruiter profile", HttpStatus.BAD_REQUEST),
+    RECRUITER_NOT_FOUND(4003, "Recruiter profile not found", HttpStatus.NOT_FOUND),
+    RECRUITER_ALREADY_APPROVED(4004, "Recruiter profile is already approved", HttpStatus.BAD_REQUEST),
+    ROLE_NOT_FOUND(4005, "Role not found in system", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 50xx: JdSkill
     SKILL_EXISTED(5000, "JdSkill existed", HttpStatus.BAD_REQUEST),
