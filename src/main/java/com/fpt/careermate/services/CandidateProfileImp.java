@@ -59,7 +59,7 @@ public class CandidateProfileImp implements CandidateProfileService {
 
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
-    public CandidateProfileResponse saveOrUpdateCandidateProfile(CandidateProfileRequest request) {
+    public CandidateProfileResponse updateCandidateProfile(CandidateProfileRequest request) {
         Candidate candidate = generateProfile();
         candidateMapper.updateCandidateFromRequest(request, candidate);
         Candidate savedCandidate = candidateRepo.save(candidate);
@@ -173,14 +173,35 @@ public class CandidateProfileImp implements CandidateProfileService {
         return candidateMapper.toGeneralInfoResponse(updatedCandidate);
     }
 
+    @PreAuthorize("hasRole('CANDIDATE')")
+    @Transactional
+    @Override
+    public CandidateProfileResponse saveCandidateProfile(CandidateProfileRequest request) {
+        Account account = authenticationService.findByEmail();
+        Candidate existingCandidate = candidateRepo.findByAccount_Id(account.getId()).orElse(null);
+        if(existingCandidate != null){
+            throw new AppException(ErrorCode.CANDIDATE_PROFILE_ALREADY_EXISTS);
+        }
+
+        // Create new candidate with builder pattern
+        Candidate candidate = Candidate.builder()
+                .account(account)
+                .industryExperiences(new java.util.ArrayList<>())
+                .workModels(new java.util.ArrayList<>())
+                .build();
+
+        // Map request fields to candidate
+        candidateMapper.updateCandidateFromRequest(request, candidate);
+
+        // Save and return response
+        Candidate savedCandidate = candidateRepo.save(candidate);
+        return candidateMapper.toCandidateProfileResponse(savedCandidate);
+    }
+
 
     public Candidate generateProfile() {
         Account account = authenticationService.findByEmail();
         return candidateRepo.findByAccount_Id(account.getId())
-                .orElseGet(() -> {
-                    Candidate newCandidate = new Candidate();
-                    newCandidate.setAccount(account);
-                    return newCandidate;
-                });
+                .orElseThrow(() -> new AppException(ErrorCode.CANDIDATE_NOT_FOUND));
     }
 }
