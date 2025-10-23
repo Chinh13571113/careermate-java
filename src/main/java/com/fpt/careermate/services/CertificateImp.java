@@ -28,7 +28,7 @@ public class CertificateImp implements CertificateService {
     @Transactional
     @Override
     public CertificateResponse addCertificationToResume(CertificateRequest certification) {
-        Resume resume = resumeImp.generateResume();
+        Resume resume = resumeImp.getResumeEntityById(certification.getResumeId());
 
         if (certificateRepo.countCertificateByResumeId(resume.getResumeId()) >= 3) {
             throw new AppException(ErrorCode.OVERLOAD);

@@ -28,7 +28,7 @@ public class AwardImp implements AwardService {
     @Transactional
     @Override
     public AwardResponse addAwardToResume(AwardRequest award) {
-        Resume resume = resumeImp.generateResume();
+        Resume resume = resumeImp.getResumeEntityById(award.getResumeId());
 
         if (awardRepo.countAwardByResumeId(resume.getResumeId()) >= 5) {
             throw new AppException(ErrorCode.OVERLOAD);

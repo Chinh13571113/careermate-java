@@ -29,7 +29,7 @@ public class ForeignLanguageImp implements ForeignLanguageService {
     @Transactional
     @Override
     public ForeignLanguageResponse addForeignLanguageToResume(ForeignLanguageRequest foreignLanguage) {
-        Resume resume = resumeImp.generateResume();
+        Resume resume = resumeImp.getResumeEntityById(foreignLanguage.getResumeId());
 
         if (foreignLanguageRepo.countForeignLanguageByResumeId(resume.getResumeId()) >= 5) {
             throw new AppException(ErrorCode.OVERLOAD);

@@ -28,7 +28,7 @@ public class WorkExperienceImp implements WorkExperienceService {
     @Transactional
     @Override
     public WorkExperienceResponse addWorkExperienceToResume(WorkExperienceRequest workExperience) {
-        Resume resume = resumeImp.generateResume();
+        Resume resume = resumeImp.getResumeEntityById(workExperience.getResumeId());
 
         if (workExperienceRepo.countWorkExperienceByResumeId(resume.getResumeId()) >= 5) {
             throw new AppException(ErrorCode.OVERLOAD);

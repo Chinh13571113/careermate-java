@@ -13,6 +13,9 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EducationRequest {
+    @NotNull(message = "Resume ID is required")
+    Integer resumeId;
+
     @NotBlank(message = "School name is required")
     String school;
 

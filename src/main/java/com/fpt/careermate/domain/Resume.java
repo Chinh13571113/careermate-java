@@ -28,8 +28,8 @@ public class Resume {
     @Column(updatable = false)
     LocalDateTime createdAt;
 
-    @OneToOne
-    @JoinColumn(name = "candidateId", unique = true, nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "candidateId", nullable = false)
     Candidate candidate;
 
     @OneToMany(mappedBy = "resume", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -15,6 +15,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -34,11 +35,6 @@ public class ResumeImp implements ResumeService {
     public ResumeResponse createResume(ResumeRequest resumeRequest) {
         Candidate candidate = candidateProfileImp.generateProfile();
 
-        // Check if resume already exists for this candidate
-        if (resumeRepo.findByCandidateCandidateId(candidate.getCandidateId()).isPresent()) {
-            throw new AppException(ErrorCode.RESUME_ALREADY_EXISTS);
-        }
-
         // Create new resume
         Resume newResume = new Resume();
         newResume.setCandidate(candidate);
@@ -49,17 +45,26 @@ public class ResumeImp implements ResumeService {
     }
 
     @Override
-    public ResumeResponse getResumeById() {
-        // Get authenticated user's account
-        Account account = authenticationService.findByEmail();
+    public List<ResumeResponse> getAllResumesByCandidate() {
+        // Get authenticated user's candidate profile
+        Candidate candidate = candidateProfileImp.generateProfile();
 
-        // Find candidate by authenticated account
-        Candidate candidate = candidateRepo.findByAccount_Id(account.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.CANDIDATE_NOT_FOUND));
+        // Find all resumes for this candidate
+        List<Resume> resumes = resumeRepo.findByCandidateCandidateId(candidate.getCandidateId());
 
+        return resumes.stream()
+                .map(resumeMapper::toResumeResponse)
+                .collect(Collectors.toList());
+    }
 
-        Resume resume = resumeRepo.findByCandidateCandidateId(candidate.getCandidateId())
-                .orElseThrow(() -> new AppException(ErrorCode.RESUME_NOT_FOUND)); // You may want to add RESUME_NOT_FOUND
+    @Override
+    public ResumeResponse getResumeById(int resumeId) {
+        // Get authenticated user's candidate profile
+        Candidate candidate = candidateProfileImp.generateProfile();
+
+        // Find resume by ID and ensure it belongs to the authenticated candidate
+        Resume resume = resumeRepo.findByResumeIdAndCandidateCandidateId(resumeId, candidate.getCandidateId())
+                .orElseThrow(() -> new AppException(ErrorCode.RESUME_NOT_FOUND));
 
         return resumeMapper.toResumeResponse(resume);
     }
@@ -73,22 +78,25 @@ public class ResumeImp implements ResumeService {
 
     @Transactional
     @Override
-    public ResumeResponse updateResume(ResumeRequest resumeRequest) {
-        Resume resume = generateResume();
+    public ResumeResponse updateResume(int resumeId, ResumeRequest resumeRequest) {
+        // Get authenticated user's candidate profile
+        Candidate candidate = candidateProfileImp.generateProfile();
+
+        // Find resume and ensure it belongs to the authenticated candidate
+        Resume resume = resumeRepo.findByResumeIdAndCandidateCandidateId(resumeId, candidate.getCandidateId())
+                .orElseThrow(() -> new AppException(ErrorCode.RESUME_NOT_FOUND));
+
+        // Update resume
         resume.setAboutMe(resumeRequest.getAboutMe());
-        return resumeMapper.toResumeResponse(resume);
+        Resume updatedResume = resumeRepo.save(resume);
+
+        return resumeMapper.toResumeResponse(updatedResume);
     }
 
-    public Resume generateResume(){
-        return resumeRepo.findByCandidateCandidateId(candidateProfileImp.generateProfile().getCandidateId()).orElseGet(
-                () -> {
-                    Resume newResume = new Resume();
-                    newResume.setCandidate(candidateProfileImp.generateProfile());
-                    resumeRepo.save(newResume);
-                    return newResume;
-                }
-        );
+    // Helper method to get resume by ID for other services (used by Education, Certificate, etc.)
+    public Resume getResumeEntityById(int resumeId) {
+        Candidate candidate = candidateProfileImp.generateProfile();
+        return resumeRepo.findByResumeIdAndCandidateCandidateId(resumeId, candidate.getCandidateId())
+                .orElseThrow(() -> new AppException(ErrorCode.RESUME_NOT_FOUND));
     }
-
-
 }
