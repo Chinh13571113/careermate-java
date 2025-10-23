@@ -13,6 +13,7 @@ import lombok.experimental.FieldDefaults;
 public class SkillResponse {
     int skillId;
     String skillType;
+    String skillName;
     Integer yearOfExperience;
 }
 

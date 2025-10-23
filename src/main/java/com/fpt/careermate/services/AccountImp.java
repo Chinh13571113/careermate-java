@@ -70,6 +70,7 @@ public class AccountImp implements com.fpt.careermate.services.impl.AccountServi
         );
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public void deleteAccount(int id) {
         Account account = accountRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));

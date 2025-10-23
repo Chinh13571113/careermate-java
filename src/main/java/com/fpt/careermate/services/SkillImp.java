@@ -28,7 +28,7 @@ public class SkillImp implements SkillService {
     @Transactional
     @Override
     public SkillResponse addSkillToResume(SkillRequest skill) {
-        Resume resume = resumeImp.generateResume();
+        Resume resume = resumeImp.getResumeEntityById(skill.getResumeId());
 
         if (skillRepo.countSkillByResumeId(resume.getResumeId()) >= 10) {
             throw new AppException(ErrorCode.OVERLOAD);

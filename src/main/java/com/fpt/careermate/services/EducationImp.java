@@ -28,7 +28,7 @@ public class EducationImp implements EducationService {
     @Transactional
     @Override
     public EducationResponse addEducationToResume(EducationRequest education) {
-        Resume resume = resumeImp.generateResume();
+        Resume resume = resumeImp.getResumeEntityById(education.getResumeId());
 
 
 

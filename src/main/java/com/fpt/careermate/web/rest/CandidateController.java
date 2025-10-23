@@ -27,10 +27,20 @@ import org.springframework.web.bind.annotation.*;
 public class CandidateController {
     CandidateProfileImp candidateProfileImp;
 
-    @Operation(summary = "Create or Update candidate profile", description = "Create or Update candidate profile")
-    @PostMapping("/profiles")
-    public ApiResponse<CandidateProfileResponse> saveOrUpdateCandidateProfile(@RequestBody @Valid CandidateProfileRequest request) {
-        CandidateProfileResponse response = candidateProfileImp.saveOrUpdateCandidateProfile(request);
+    @Operation(summary = "Update candidate profile", description = "Create or Update candidate profile")
+    @PutMapping("/profiles")
+    public ApiResponse<CandidateProfileResponse> updateCandidateProfile(@RequestBody @Valid CandidateProfileRequest request) {
+        CandidateProfileResponse response = candidateProfileImp.updateCandidateProfile(request);
+        return ApiResponse.<CandidateProfileResponse>builder()
+                .code(200)
+                .message("Successfully created candidate profile")
+                .result(response)
+                .build();
+    }
+    @Operation(summary = "Create candidate profile", description = "Create candidate profile")
+    @PostMapping("/profiles/create")
+    public ApiResponse<CandidateProfileResponse> saveCandidateProfile(@RequestBody @Valid CandidateProfileRequest request) {
+        CandidateProfileResponse response = candidateProfileImp.saveCandidateProfile(request);
         return ApiResponse.<CandidateProfileResponse>builder()
                 .code(200)
                 .message("Successfully created candidate profile")

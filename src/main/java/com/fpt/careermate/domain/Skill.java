@@ -15,7 +15,8 @@ public class Skill {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int skillId;
-
+    @Column(nullable = false, length = 100, unique = true)
+    String skillName;
     String skillType;
     Integer yearOfExperience;
 

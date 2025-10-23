@@ -1,6 +1,7 @@
 package com.fpt.careermate.services.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -12,6 +13,9 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WorkExperienceRequest {
+    @NotNull(message = "Resume ID is required")
+    Integer resumeId;
+
     @NotBlank(message = "Job title is required")
     String jobTitle;
 
@@ -21,4 +25,3 @@ public class WorkExperienceRequest {
     String description;
     String project;
 }
-

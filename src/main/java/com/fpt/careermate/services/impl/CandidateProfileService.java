@@ -9,10 +9,12 @@ import org.springframework.data.domain.Pageable;
 
 public interface CandidateProfileService {
     PageResponse<CandidateProfileResponse> findAll(Pageable pageable);
-    CandidateProfileResponse saveOrUpdateCandidateProfile(CandidateProfileRequest request);
+    CandidateProfileResponse updateCandidateProfile(CandidateProfileRequest request);
     void deleteProfile(int id);
     GeneralInfoResponse saveCandidateGeneralInfo(GeneralInfoRequest request);
     CandidateProfileResponse getCandidateProfileById();
     GeneralInfoResponse getCandidateGeneralInfoById();
     GeneralInfoResponse updateCandidateGeneralInfo(GeneralInfoRequest request);
+    CandidateProfileResponse saveCandidateProfile(CandidateProfileRequest request);
+
 }

@@ -13,6 +13,9 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CertificateRequest {
+    @NotNull(message = "Resume ID is required")
+    Integer resumeId;
+
     @NotBlank(message = "Certificate name is required")
     String name;
     @NotBlank(message = "Organization is required")

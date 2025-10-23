@@ -13,6 +13,9 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AwardRequest {
+    @NotNull(message = "Resume ID is required")
+    Integer resumeId;
+
     @NotBlank(message = "Award name is required")
     String name;
 

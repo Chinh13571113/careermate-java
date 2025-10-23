@@ -11,9 +11,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ForeignLanguageRequest {
+    @NotNull(message = "Resume ID is required")
+    Integer resumeId;
+
     @NotNull(message = "Language is required")
     String language;
     @NotNull(message = "Proficiency level is required")
     String level;
 }
-

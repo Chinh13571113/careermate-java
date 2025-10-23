@@ -32,6 +32,10 @@ public class Candidate extends BaseUser {
     @JoinColumn(name = "account_id", unique = true, nullable = false)
     private Account account;
 
+    // One-to-many with Resume
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Resume> resumes;
+
     // One-to-many with IndustryExperiences
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<IndustryExperiences> industryExperiences;
