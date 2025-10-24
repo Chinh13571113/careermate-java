@@ -7,6 +7,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -63,4 +64,7 @@ public class JobPosting {
     @ManyToOne
     @JoinColumn(name = "recruiter_id", nullable = false)
     Recruiter recruiter;
+
+    @OneToMany(mappedBy = "jobPosting", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<JobApply> jobApplies = new HashSet<>();
 }

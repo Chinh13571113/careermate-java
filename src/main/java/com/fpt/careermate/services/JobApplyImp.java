@@ -1,0 +1,130 @@
+package com.fpt.careermate.services;
+
+import com.fpt.careermate.constant.StatusJobApply;
+import com.fpt.careermate.domain.Candidate;
+import com.fpt.careermate.domain.JobApply;
+import com.fpt.careermate.domain.JobPosting;
+import com.fpt.careermate.repository.CandidateRepo;
+import com.fpt.careermate.repository.JobApplyRepo;
+import com.fpt.careermate.repository.JobPostingRepo;
+import com.fpt.careermate.services.dto.request.JobApplyRequest;
+import com.fpt.careermate.services.dto.response.JobApplyResponse;
+import com.fpt.careermate.services.impl.JobApplyService;
+import com.fpt.careermate.services.mapper.JobApplyMapper;
+import com.fpt.careermate.web.exception.AppException;
+import com.fpt.careermate.web.exception.ErrorCode;
+import jakarta.transaction.Transactional;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@RequiredArgsConstructor
+public class JobApplyImp implements JobApplyService {
+
+    JobApplyRepo jobApplyRepo;
+    JobPostingRepo jobPostingRepo;
+    CandidateRepo candidateRepo;
+    JobApplyMapper jobApplyMapper;
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public JobApplyResponse createJobApply(JobApplyRequest request) {
+        // Validate job posting exists
+        JobPosting jobPosting = jobPostingRepo.findById(request.getJobPostingId())
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_POSTING_NOT_FOUND));
+
+        // Validate candidate exists
+        Candidate candidate = candidateRepo.findById(request.getCandidateId())
+                .orElseThrow(() -> new AppException(ErrorCode.CANDIDATE_NOT_FOUND));
+
+        // Check if already applied
+        jobApplyRepo.findByJobPostingIdAndCandidateCandidateId(
+                request.getJobPostingId(), request.getCandidateId())
+                .ifPresent(existing -> {
+                    throw new AppException(ErrorCode.ALREADY_APPLIED_TO_JOB_POSTING);
+                });
+
+        // Create new job apply
+        JobApply jobApply = JobApply.builder()
+                .jobPosting(jobPosting)
+                .candidate(candidate)
+                .cvFilePath(request.getCvFilePath())
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .preferredWorkLocation(request.getPreferredWorkLocation())
+                .coverLetter(request.getCoverLetter())
+                .status(StatusJobApply.SUBMITTED)
+                .createAt(LocalDateTime.now())
+                .build();
+
+        JobApply savedJobApply = jobApplyRepo.save(jobApply);
+        return jobApplyMapper.toJobApplyResponse(savedJobApply);
+    }
+
+    @Override
+    public JobApplyResponse getJobApplyById(int id) {
+        JobApply jobApply = jobApplyRepo.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_POSTING_NOT_FOUND));
+        return jobApplyMapper.toJobApplyResponse(jobApply);
+    }
+
+    @Override
+    public List<JobApplyResponse> getAllJobApplies() {
+        return jobApplyRepo.findAll().stream()
+                .map(jobApplyMapper::toJobApplyResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<JobApplyResponse> getJobAppliesByJobPosting(int jobPostingId) {
+        // Validate job posting exists
+        jobPostingRepo.findById(jobPostingId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_POSTING_NOT_FOUND));
+
+        return jobApplyRepo.findByJobPostingId(jobPostingId).stream()
+                .map(jobApplyMapper::toJobApplyResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<JobApplyResponse> getJobAppliesByCandidate(int candidateId) {
+        // Validate candidate exists
+        candidateRepo.findById(candidateId)
+                .orElseThrow(() -> new AppException(ErrorCode.CANDIDATE_NOT_FOUND));
+
+        return jobApplyRepo.findByCandidateCandidateId(candidateId).stream()
+                .map(jobApplyMapper::toJobApplyResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('RECRUITER')")
+    public JobApplyResponse updateJobApply(int id, String  request) {
+        JobApply jobApply = jobApplyRepo.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_POSTING_NOT_FOUND));
+
+        // Update status if provided
+       jobApply.setStatus(request);
+
+        JobApply updatedJobApply = jobApplyRepo.save(jobApply);
+        return jobApplyMapper.toJobApplyResponse(updatedJobApply);
+    }
+
+    @Override
+    @Transactional
+    public void deleteJobApply(int id) {
+        JobApply jobApply = jobApplyRepo.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_POSTING_NOT_FOUND));
+        jobApplyRepo.delete(jobApply);
+    }
+}

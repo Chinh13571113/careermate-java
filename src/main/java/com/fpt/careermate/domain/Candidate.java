@@ -5,7 +5,9 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -51,4 +53,7 @@ public class Candidate extends BaseUser {
 
     @OneToMany(mappedBy = "candidate")
     List<Order> orders;
+
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<JobApply> jobApplies = new HashSet<>();
 }
