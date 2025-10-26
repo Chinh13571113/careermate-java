@@ -157,6 +157,21 @@ public class CoachImp implements CoachService {
         return responses;
     }
 
+    // Mark lesson as completed
+    @PreAuthorize("hasRole('CANDIDATE')")
+    @Override
+    public void markLesson(int lessonId, boolean marked) {
+        // Check if lesson exists
+        Optional<Lesson> exstingLesson = lessonRepo.findById(lessonId);
+        if (exstingLesson.isEmpty()) {
+            throw new AppException(ErrorCode.LESSON_NOT_FOUND);
+        }
+
+        Lesson lesson = exstingLesson.get();
+        lesson.setMarked(marked);
+        lessonRepo.save(lesson);
+    }
+
     private Candidate getCurrentCandidate() {
         Account account = authenticationImp.findByEmail();
         Optional<Candidate> exsting = candidateRepo.findByAccount_Id(account.getId());

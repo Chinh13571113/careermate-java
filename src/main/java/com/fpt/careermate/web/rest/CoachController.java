@@ -55,4 +55,15 @@ public class CoachController {
                 .build();
     }
 
+    @PatchMapping("/course/lesson/mark/{lessonId}")
+    @Operation(description = "Mark or unmark lesson as completed")
+    public ApiResponse<Void> markLesson(@PathVariable int lessonId, @RequestParam boolean marked) {
+        coachImp.markLesson(lessonId, marked);
+
+        return ApiResponse.<Void>builder()
+                .code(200)
+                .message("success")
+                .build();
+    }
+
 }
