@@ -26,6 +26,7 @@ public class CoachController {
     CoachImp coachImp;
 
     @PostMapping("/course/generation")
+    @Operation(description = "Generate course by topic")
     public ApiResponse<CourseResponse> generateCourse(@RequestParam String topic) {
         return ApiResponse.<CourseResponse>builder()
                 .result(coachImp.generateCourse(topic))
@@ -47,6 +48,7 @@ public class CoachController {
     }
 
     @GetMapping("/course")
+    @Operation(description = "Get my courses")
     public ApiResponse<List<CourseListResponse>> getMyCourses() {
         return ApiResponse.<List<CourseListResponse>>builder()
                 .result(coachImp.getMyCourses())
