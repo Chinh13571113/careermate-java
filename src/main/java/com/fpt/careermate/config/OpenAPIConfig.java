@@ -2,7 +2,6 @@ package com.fpt.careermate.config;
 
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -51,7 +50,7 @@ public class OpenAPIConfig {
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
                 .group("api-service-1")
-                .packagesToScan("com.fpt.careermate.web.rest") // Thay bằng package của bạn
+                .packagesToScan("com.fpt.careermate.services") // Scan all services packages
                 .build();
     }
 }
