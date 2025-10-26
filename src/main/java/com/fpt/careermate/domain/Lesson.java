@@ -20,6 +20,7 @@ public class Lesson {
     @Column(nullable = false)
     String title;
 
+    @Column(columnDefinition = "TEXT")
     String content;
 
     boolean isMarked;

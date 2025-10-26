@@ -1,13 +1,17 @@
 package com.fpt.careermate.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fpt.careermate.domain.*;
 import com.fpt.careermate.domain.Module;
 import com.fpt.careermate.repository.CandidateRepo;
 import com.fpt.careermate.repository.CourseRepo;
+import com.fpt.careermate.repository.LessonRepo;
 import com.fpt.careermate.services.dto.response.CourseResponse;
 import com.fpt.careermate.services.impl.CoachService;
 import com.fpt.careermate.services.mapper.CoachMapper;
 import com.fpt.careermate.util.ApiClient;
+import com.fpt.careermate.web.exception.AppException;
+import com.fpt.careermate.web.exception.ErrorCode;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -19,6 +23,7 @@ import org.springframework.http.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 @Service
@@ -31,6 +36,7 @@ public class CoachImp implements CoachService {
     ApiClient apiClient;
     CourseRepo courseRepo;
     CandidateRepo candidateRepo;
+    LessonRepo lessonRepo;
     AuthenticationImp authenticationImp;
     CoachMapper coachMapper;
 
@@ -71,6 +77,43 @@ public class CoachImp implements CoachService {
         course.setCandidate(getCurrentCandidate());
 
         return coachMapper.toCourseResponse(courseRepo.save(course));
+    }
+
+    // Generate lesson for course
+    @PreAuthorize("hasRole('CANDIDATE')")
+    @Override
+    public String generateLesson(int lessonId) throws JsonProcessingException {
+        String url = BASE_URL + "generate-course/lesson";
+
+        // Check if lesson exists
+        Optional<Lesson> exstingLesson = lessonRepo.findById(lessonId);
+        if (exstingLesson.isEmpty()) {
+            throw new AppException(ErrorCode.LESSON_NOT_FOUND);
+        }
+
+        // Check if lesson content already exists
+        Lesson lesson = exstingLesson.get();
+        if(lesson.getContent() != null && !lesson.getContent().isEmpty()) {
+            return  lesson.getContent();
+        }
+
+        // If lesson content is empty, call API to generate content
+        Map<String, String> body = Map.of("lesson", lesson.getTitle());
+
+        // Call Django API
+        Map<String, Object> data = apiClient.post(url, apiClient.getToken(), body);
+
+        // Save to database
+        Object contentObj = data.get("content");
+        if (contentObj instanceof String) {
+            lesson.setContent((String) contentObj);
+        } else {
+            // fallback: convert object to JSON text
+            String contentJson = new ObjectMapper().writeValueAsString(contentObj);
+            lesson.setContent(contentJson);
+        }
+
+        return lessonRepo.save(lesson).getContent();
     }
 
     private Candidate getCurrentCandidate() {
