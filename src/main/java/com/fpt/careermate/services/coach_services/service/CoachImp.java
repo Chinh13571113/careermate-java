@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,8 @@ public class CoachImp implements CoachService {
         // Save to database
         Course course = new Course();
         course.setTitle((String) data.get("title"));
+        course.setDescription((String) data.get("description"));
+        course.setCreatedAt(LocalDate.now());
 
         // Populate modules and lessons
         List<Map<String, Object>> modulesData = (List<Map<String, Object>>) data.get("modules");

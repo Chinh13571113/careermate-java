@@ -11,7 +11,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "options")
+@Entity(name = "option")
 public class Option {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,28 +15,23 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "course")
-public class Course {
+@Entity(name = "candidate_interaction")
+public class CandidateInteraction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    @Column(nullable = false)
-    String title;
+    String eventType;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    String description;
+    String liked;
 
-    @Column(nullable = false)
-    LocalDate createdAt;
+    int progress;
 
     @ManyToOne
     @JoinColumn(name = "candidate_id", nullable = false)
     Candidate candidate;
 
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Module> modules = new ArrayList<>();
-
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<CandidateInteraction> candidateInteractions = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
+    Course course;
 }

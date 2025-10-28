@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "modules")
+@Entity(name = "module")
 public class Module {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

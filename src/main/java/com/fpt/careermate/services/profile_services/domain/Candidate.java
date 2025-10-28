@@ -1,5 +1,7 @@
 package com.fpt.careermate.services.profile_services.domain;
 
+import com.fpt.careermate.services.coach_services.domain.CandidateInteraction;
+import com.fpt.careermate.services.coach_services.domain.Course;
 import com.fpt.careermate.services.order_services.domain.Package;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.job_services.domain.JobApply;
@@ -10,6 +12,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,4 +64,10 @@ public class Candidate extends BaseUser {
 
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<JobApply> jobApplies = new HashSet<>();
+
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CandidateInteraction> candidateInteractions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Course> courses = new ArrayList<>();
 }
