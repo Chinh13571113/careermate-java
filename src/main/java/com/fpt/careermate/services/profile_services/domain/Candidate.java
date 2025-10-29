@@ -1,6 +1,5 @@
 package com.fpt.careermate.services.profile_services.domain;
 
-import com.fpt.careermate.services.coach_services.domain.CandidateInteraction;
 import com.fpt.careermate.services.coach_services.domain.Course;
 import com.fpt.careermate.services.order_services.domain.Package;
 import com.fpt.careermate.services.account_services.domain.Account;
@@ -64,9 +63,6 @@ public class Candidate extends BaseUser {
 
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<JobApply> jobApplies = new HashSet<>();
-
-    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<CandidateInteraction> candidateInteractions = new ArrayList<>();
 
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Course> courses = new ArrayList<>();

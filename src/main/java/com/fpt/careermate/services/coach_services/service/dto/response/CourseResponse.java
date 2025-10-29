@@ -13,5 +13,7 @@ import java.util.List;
 public class CourseResponse {
     String id;
     String title;
+    String description;
+    String category;
     List<ModuleResponse> modules;
 }

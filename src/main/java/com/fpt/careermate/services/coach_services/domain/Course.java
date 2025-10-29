@@ -31,13 +31,13 @@ public class Course {
     @Column(nullable = false)
     LocalDate createdAt;
 
+    @Column(nullable = false)
+    String category;
+
     @ManyToOne
     @JoinColumn(name = "candidate_id", nullable = false)
     Candidate candidate;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Module> modules = new ArrayList<>();
-
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<CandidateInteraction> candidateInteractions = new ArrayList<>();
 }

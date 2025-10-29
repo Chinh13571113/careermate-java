@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,29 +32,22 @@ public class WeaviateImp {
     public void createJobPostingCollection() {
         WeaviateClass jobPostingClass = WeaviateClass.builder()
                 .className("JobPosting")
-                .description("Job posting with automatic vectorization using text2vec-ollama")
-                .moduleConfig(Map.of(
-                                "text2vec-ollama", Map.of(
-                                        "model", "embeddinggemma:latest",
-                                        "modelType", "text",
-                                        "vectorizeClassName", false,
-                                        "apiEndpoint", "http://host.docker.internal:11434"
-                                )
-                ))
+                .description("Job posting ")
+                .vectorizer("text2vec-weaviate")
                 .properties(List.of(
                         Property.builder().name("jobId").dataType(List.of("int")).build(),
                         Property.builder().name("title").dataType(List.of("string")).build(),
                         Property.builder().name("description").dataType(List.of("string")).build(),
-                        Property.builder().name("skills").dataType(List.of("string[]")).build()
+                        Property.builder().name("skills").dataType(List.of("string[]")).build(),
+                        Property.builder().name("address").dataType(List.of("string")).build()
                 ))
-                .vectorizer("text2vec-ollama")
                 .build();
 
         client.schema().classCreator()
                 .withClass(jobPostingClass)
                 .run();
 
-        log.info("Collection 'JobPosting' with text2vec-ollama created!");
+        log.info("Collection 'JobPosting' created!");
     }
 
     public void getAllCollections() {
@@ -73,14 +67,15 @@ public class WeaviateImp {
         // Convert JobDescription -> List<String> skills
         List<String> skills = jobPosting.getJobDescriptions().stream()
                 .map(jd -> jd.getJdSkill().getName())
-                .collect(Collectors.toList());
+                .toList();
 
         // Create Map property
         Map<String, Object> properties = Map.of(
                 "jobId", jobPosting.getId(),
                 "title", jobPosting.getTitle(),
                 "description", jobPosting.getDescription(),
-                "skills", skills
+                "skills", skills,
+                "address", jobPosting.getAddress()
         );
 
         // Save to Weaviate
@@ -89,7 +84,7 @@ public class WeaviateImp {
                 .withProperties(properties)
                 .run();
 
-        System.out.println("JobPosting added: " + jobPosting.getTitle());
+        log.info("JobPosting added: " + jobPosting.getTitle());
     }
 
     public void getJobPostings() {
