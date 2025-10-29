@@ -13,7 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "jd_skills")
+@Entity(name = "jd_skill")
 public class JdSkill {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

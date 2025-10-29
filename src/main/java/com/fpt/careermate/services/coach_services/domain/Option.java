@@ -1,4 +1,4 @@
-package com.fpt.careermate.services.job_services.domain;
+package com.fpt.careermate.services.coach_services.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,20 +11,19 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "job_description")
-public class JobDescription {
+@Entity(name = "option")
+public class Option {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
     @Column(nullable = false)
-    boolean mustToHave;
+    String content;
+
+    @Column(nullable = false)
+    String label;
 
     @ManyToOne
-    @JoinColumn(name = "job_posting_id", nullable = false)
-    JobPosting jobPosting;
-
-    @ManyToOne
-    @JoinColumn(name = "skill_id", nullable = false)
-    JdSkill jdSkill;
+    @JoinColumn(name = "question_id", nullable = false)
+    Question question;
 }

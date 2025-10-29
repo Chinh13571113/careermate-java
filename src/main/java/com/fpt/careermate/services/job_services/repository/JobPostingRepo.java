@@ -24,6 +24,6 @@ public interface JobPostingRepo extends JpaRepository<JobPosting, Integer> {
     // Admin methods
     Page<JobPosting> findAllByStatusOrderByCreateAtDesc(String status, Pageable pageable);
 
-    @Query("SELECT COUNT(jp) FROM job_postings jp WHERE jp.status = :status")
+    @Query("SELECT COUNT(jp) FROM job_posting jp WHERE jp.status = :status")
     Long countByStatus(@Param("status") String status);
 }
