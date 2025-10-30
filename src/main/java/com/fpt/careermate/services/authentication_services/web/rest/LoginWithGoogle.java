@@ -23,6 +23,7 @@ public class LoginWithGoogle {
     @GetMapping("/google/login")
     public void loginWithGoogle(
             @RequestParam(value = "account_type", required = false) String accountType,
+            @RequestParam(value = "redirect_url", required = false) String redirectUrl,
             HttpSession session,
             HttpServletResponse response) throws IOException {
 
@@ -33,11 +34,74 @@ public class LoginWithGoogle {
             session.removeAttribute(ACCOUNT_TYPE_SESSION_KEY);
         }
 
+        // Store frontend redirect URL for after OAuth completes
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            session.setAttribute("oauth_redirect_url", redirectUrl);
+        } else {
+            // Default frontend URL
+            session.setAttribute("oauth_redirect_url", "http://localhost:3000");
+        }
+
         response.sendRedirect("/oauth2/authorization/google");
     }
 
     @GetMapping("/google/success")
-    public ApiResponse<GoogleResponse> googleLoginSuccess(HttpSession session) {
+    public void googleLoginSuccess(HttpSession session, HttpServletResponse response) throws IOException {
+        String accessToken = (String) session.getAttribute("accessToken");
+        String refreshToken = (String) session.getAttribute("refreshToken");
+        String email = (String) session.getAttribute("email");
+        Boolean isRecruiter = (Boolean) session.getAttribute("isRecruiter");
+        Boolean profileCompleted = (Boolean) session.getAttribute("profileCompleted");
+        String redirectUrl = (String) session.getAttribute("oauth_redirect_url");
+
+        // Default to localhost if no redirect URL was stored
+        if (redirectUrl == null || redirectUrl.isBlank()) {
+            redirectUrl = "http://localhost:3000";
+        }
+
+        // Build redirect URL with OAuth result as query parameters
+        StringBuilder finalUrl = new StringBuilder(redirectUrl);
+
+        // Add /oauth-callback path if not already present
+        if (!redirectUrl.contains("/oauth-callback") && !redirectUrl.endsWith("/")) {
+            finalUrl.append("/oauth-callback");
+        } else if (redirectUrl.endsWith("/")) {
+            finalUrl.append("oauth-callback");
+        }
+
+        finalUrl.append("?success=true");
+
+        if (email != null) {
+            finalUrl.append("&email=").append(java.net.URLEncoder.encode(email, "UTF-8"));
+        }
+
+        if (accessToken != null) {
+            finalUrl.append("&access_token=").append(java.net.URLEncoder.encode(accessToken, "UTF-8"));
+            finalUrl.append("&refresh_token=").append(java.net.URLEncoder.encode(refreshToken, "UTF-8"));
+            finalUrl.append("&status=active");
+        } else if (Boolean.TRUE.equals(isRecruiter) && !Boolean.TRUE.equals(profileCompleted)) {
+            finalUrl.append("&status=registration_required");
+        } else {
+            finalUrl.append("&status=pending_approval");
+        }
+
+        if (Boolean.TRUE.equals(isRecruiter)) {
+            finalUrl.append("&account_type=recruiter");
+            finalUrl.append("&profile_completed=").append(Boolean.TRUE.equals(profileCompleted));
+        } else {
+            finalUrl.append("&account_type=candidate");
+        }
+
+        // Clear temporary tokens from the session; keep email and recruiter flag for registration completion
+        session.removeAttribute("accessToken");
+        session.removeAttribute("refreshToken");
+        session.removeAttribute("oauth_redirect_url");
+
+        response.sendRedirect(finalUrl.toString());
+    }
+
+    @GetMapping("/google/status")
+    public ApiResponse<GoogleResponse> getGoogleLoginStatus(HttpSession session) {
         String accessToken = (String) session.getAttribute("accessToken");
         String refreshToken = (String) session.getAttribute("refreshToken");
         String email = (String) session.getAttribute("email");
@@ -52,9 +116,6 @@ public class LoginWithGoogle {
                 .profileCompleted(Boolean.TRUE.equals(profileCompleted))
                 .build();
 
-        // Clear temporary tokens from the session; keep email and recruiter flag for registration completion
-        session.removeAttribute("accessToken");
-        session.removeAttribute("refreshToken");
 
         int code = (accessToken != null) ? 200 : 202;
         String message = (accessToken != null)

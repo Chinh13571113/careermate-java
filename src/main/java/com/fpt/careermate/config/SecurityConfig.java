@@ -36,6 +36,7 @@ public class SecurityConfig {
             "/api/users/change-password/**",
             "/api/oauth2/google/login",
             "/api/oauth2/google/success",
+            "/api/oauth2/google/status",
             "/api/oauth2/recruiter/complete-registration",
             "/api/registration/recruiter",
             "/api/v1/auth/**",
