@@ -53,7 +53,7 @@ public class JobPostingImp implements JobPostingService {
     WorkModelRepo workModelRepo;
     JobPostingMapper jobPostingMapper;
     AuthenticationImp authenticationImp;
-    WeaviateImp weaviateImp;
+    DjangoImp djangoImp;
     JobPostingValidator jobPostingValidator;
 
     // Recruiter create job posting
@@ -102,7 +102,7 @@ public class JobPostingImp implements JobPostingService {
         JobPosting saved = jobPostingRepo.save(jobPosting);
 
         // Add to weaviate
-        weaviateImp.addJobPosting(saved);
+        djangoImp.addJobPosting(saved);
     }
 
     // Get all job postings of the current recruiter with all status
