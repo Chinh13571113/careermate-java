@@ -8,7 +8,6 @@ import com.fpt.careermate.services.account_services.repository.AccountRepo;
 import com.fpt.careermate.services.authentication_services.repository.RoleRepo;
 import com.fpt.careermate.services.account_services.service.impl.AccountService;
 import com.fpt.careermate.services.account_services.service.dto.request.AccountCreationRequest;
-import com.fpt.careermate.services.account_services.service.dto.request.AccountUpdateRequest;
 import com.fpt.careermate.services.account_services.service.dto.response.AccountResponse;
 import com.fpt.careermate.common.response.PageResponse;
 import com.fpt.careermate.services.account_services.service.mapper.AccountMapper;
@@ -76,6 +75,14 @@ public class AccountImp implements AccountService {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Override
+    public AccountResponse getAccountById(int id) {
+        Account account = accountRepo.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return accountMapper.toAccountResponse(account);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Override
     public void deleteAccount(int id) {
         Account account = accountRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         account.setStatus(StatusAccount.INACTIVE);
@@ -104,5 +111,10 @@ public class AccountImp implements AccountService {
         );
     }
 
+    @Override
+    public AccountResponse getCurrentUser() {
+        Account account = authenticationImp.findByEmail();
+        return accountMapper.toAccountResponse(account);
+    }
 
 }

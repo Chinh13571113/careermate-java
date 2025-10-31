@@ -92,6 +92,32 @@ public class AccountController {
                 .build();
     }
 
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Get Account by ID",
+        description = "Get account details by ID. Users can view their own account, admins can view any account."
+    )
+    ApiResponse<AccountResponse> getUserById(@PathVariable int id) {
+        AccountResponse account = accountImp.getAccountById(id);
+        return ApiResponse.<AccountResponse>builder()
+                .code(200)
+                .result(account)
+                .build();
+    }
+
+    @GetMapping("/current")
+    @Operation(
+        summary = "Get Current User Profile",
+        description = "Get the currently authenticated user's account details"
+    )
+    ApiResponse<AccountResponse> getCurrentUser() {
+        AccountResponse account = accountImp.getCurrentUser();
+        return ApiResponse.<AccountResponse>builder()
+                .code(200)
+                .result(account)
+                .build();
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Account by ID", description = "Delete an account by its ID")
     ApiResponse<Void> deleteUser(@PathVariable int id) {
