@@ -127,14 +127,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute("oauth_account_id", account.getId());
         session.setAttribute("oauth_timestamp", System.currentTimeMillis());
         session.setAttribute("email", email);
-        session.setAttribute("isRecruiter", requiresOrgInfo);
+        // Fix: isRecruiter should indicate if account has recruiter role, not whether org info is required
+        session.setAttribute("isRecruiter", hasRecruiterRole);
         session.setAttribute("profileCompleted", profileCompleted);
 
         // Set session to last 30 minutes for OAuth completion flow
         session.setMaxInactiveInterval(1800);
 
-        log.info("OAuth Success - Email: {}, Recruiter: {}, ProfileCompleted: {}, AccountId: {}",
-                 email, requiresOrgInfo, profileCompleted, account.getId());
+        log.info("OAuth Success - Email: {}, IsRecruiter: {}, ProfileCompleted: {}, RequiresOrgInfo: {}, Status: {}, AccountId: {}",
+                 email, hasRecruiterRole, profileCompleted, requiresOrgInfo, account.getStatus(), account.getId());
 
         // Redirect to success endpoint which returns OAuth status as JSON
         // Frontend will call this endpoint to get OAuth result and handle accordingly

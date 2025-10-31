@@ -75,22 +75,32 @@ public class LoginWithGoogle {
             finalUrl.append("&email=").append(java.net.URLEncoder.encode(email, "UTF-8"));
         }
 
-        if (accessToken != null) {
-            finalUrl.append("&access_token=").append(java.net.URLEncoder.encode(accessToken, "UTF-8"));
-            finalUrl.append("&refresh_token=").append(java.net.URLEncoder.encode(refreshToken, "UTF-8"));
-            finalUrl.append("&status=active");
-        } else if (Boolean.TRUE.equals(isRecruiter) && !Boolean.TRUE.equals(profileCompleted)) {
-            finalUrl.append("&status=registration_required");
-        } else {
-            finalUrl.append("&status=pending_approval");
-        }
+        // Determine account type first - this is critical for proper redirect handling
+        boolean isRecruiterAccount = Boolean.TRUE.equals(isRecruiter);
+        boolean hasCompletedProfile = Boolean.TRUE.equals(profileCompleted);
 
-        if (Boolean.TRUE.equals(isRecruiter)) {
+        // Set account_type parameter
+        if (isRecruiterAccount) {
             finalUrl.append("&account_type=recruiter");
-            finalUrl.append("&profile_completed=").append(Boolean.TRUE.equals(profileCompleted));
+            finalUrl.append("&profile_completed=").append(hasCompletedProfile);
         } else {
             finalUrl.append("&account_type=candidate");
         }
+
+        // Set status and tokens based on account state
+        if (accessToken != null) {
+            // Account is ACTIVE and tokens were generated
+            finalUrl.append("&access_token=").append(java.net.URLEncoder.encode(accessToken, "UTF-8"));
+            finalUrl.append("&refresh_token=").append(java.net.URLEncoder.encode(refreshToken, "UTF-8"));
+            finalUrl.append("&status=active");
+        } else if (isRecruiterAccount && !hasCompletedProfile) {
+            // Recruiter needs to complete organization info
+            finalUrl.append("&status=registration_required");
+        } else {
+            // Account is PENDING or awaiting approval
+            finalUrl.append("&status=pending_approval");
+        }
+
 
         // Clear temporary tokens from the session; keep email and recruiter flag for registration completion
         session.removeAttribute("accessToken");
