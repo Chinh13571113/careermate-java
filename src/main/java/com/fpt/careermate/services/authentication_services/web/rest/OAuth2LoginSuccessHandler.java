@@ -46,36 +46,59 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         session.removeAttribute(LoginWithGoogle.ACCOUNT_TYPE_SESSION_KEY);
 
         Account account = accountRepo.findByEmail(email).orElse(null);
-        if (account == null) {
+
+        // Check if account already exists with a different role type
+        if (account != null && account.getRoles() != null && !account.getRoles().isEmpty()) {
+            // Account exists - check if trying to register with different role
+            boolean hasRecruiterRole = account.getRoles().stream()
+                    .anyMatch(role -> PredefineRole.RECRUITER_ROLE.equalsIgnoreCase(role.getName()));
+            boolean hasCandidateRole = account.getRoles().stream()
+                    .anyMatch(role -> PredefineRole.USER_ROLE.equalsIgnoreCase(role.getName()));
+
+            // Prevent role conflict: cannot add recruiter role to existing candidate account or vice versa
+            if (isRecruiter && hasCandidateRole) {
+                log.warn("Account {} already exists as CANDIDATE. Cannot register as RECRUITER.", email);
+                session.setAttribute("oauth_error", "This email is already registered as a Candidate account. Please use a different email for Recruiter registration.");
+                response.sendRedirect("/api/oauth2/google/error?reason=role_conflict&existing_role=candidate");
+                return;
+            }
+
+            if (!isRecruiter && hasRecruiterRole) {
+                log.warn("Account {} already exists as RECRUITER. Cannot register as CANDIDATE.", email);
+                session.setAttribute("oauth_error", "This email is already registered as a Recruiter account. Please login as a Recruiter.");
+                response.sendRedirect("/api/oauth2/google/error?reason=role_conflict&existing_role=recruiter");
+                return;
+            }
+
+            // Account exists with correct role - proceed with login (no role changes)
+            log.info("Existing account {} logging in with Google", email);
+        } else if (account == null) {
+            // New account - create it
             account = new Account();
             account.setEmail(email);
             account.setUsername(name);
             account.setPassword("GOOGLE_LOGIN"); // OAuth users do not maintain a local password
-        }
 
-        Set<Role> roles = new HashSet<>();
-        if (account.getRoles() != null) {
-            roles.addAll(account.getRoles());
-        }
+            Set<Role> roles = new HashSet<>();
 
-        if (isRecruiter) {
-            // Recruiter intent: attach recruiter role immediately but freeze access until profile + admin approval
-            Role recruiterRole = roleRepo.findByName(PredefineRole.RECRUITER_ROLE)
-                    .orElseThrow(() -> new RuntimeException("Role RECRUITER not found"));
-            roles.add(recruiterRole);
-            account.setStatus("PENDING"); // Must await admin approval before login
-        } else {
-            // Default Google login path becomes a candidate with ACTIVE status if not already set
-            Role candidateRole = roleRepo.findByName(PredefineRole.USER_ROLE)
-                    .orElseThrow(() -> new RuntimeException("Role USER not found"));
-            roles.add(candidateRole);
-            if (account.getStatus() == null || account.getStatus().isBlank()) {
+            if (isRecruiter) {
+                // Recruiter intent: attach recruiter role immediately but freeze access until profile + admin approval
+                Role recruiterRole = roleRepo.findByName(PredefineRole.RECRUITER_ROLE)
+                        .orElseThrow(() -> new RuntimeException("Role RECRUITER not found"));
+                roles.add(recruiterRole);
+                account.setStatus("PENDING"); // Must await admin approval before login
+            } else {
+                // Default Google login path becomes a candidate with ACTIVE status
+                Role candidateRole = roleRepo.findByName(PredefineRole.USER_ROLE)
+                        .orElseThrow(() -> new RuntimeException("Role USER not found"));
+                roles.add(candidateRole);
                 account.setStatus("ACTIVE");
             }
-        }
 
-        account.setRoles(roles);
-        account = accountRepo.save(account);
+            account.setRoles(roles);
+            account = accountRepo.save(account);
+            log.info("Created new account {} with role: {}", email, isRecruiter ? "RECRUITER" : "CANDIDATE");
+        }
 
         boolean hasRecruiterRole = account.getRoles().stream()
                 .anyMatch(role -> PredefineRole.RECRUITER_ROLE.equalsIgnoreCase(role.getName()));

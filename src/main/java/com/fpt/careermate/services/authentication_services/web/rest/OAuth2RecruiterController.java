@@ -66,8 +66,8 @@ public class OAuth2RecruiterController {
         }
 
         try {
-            // Create recruiter profile
-            registrationService.createRecruiterProfileForOAuth(email, orgInfo);
+            // Complete recruiter profile (account already has RECRUITER role from OAuth)
+            registrationService.completeRecruiterProfileForOAuth(email, orgInfo);
 
             log.info("Recruiter profile created successfully for: {}", email);
 

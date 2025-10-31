@@ -128,4 +128,44 @@ public class LoginWithGoogle {
                 .result(tokenResponse)
                 .build();
     }
+
+    @GetMapping("/google/error")
+    public void googleLoginError(
+            @RequestParam(value = "reason", required = false) String reason,
+            @RequestParam(value = "existing_role", required = false) String existingRole,
+            HttpSession session,
+            HttpServletResponse response) throws IOException {
+
+        String errorMessage = (String) session.getAttribute("oauth_error");
+        String redirectUrl = (String) session.getAttribute("oauth_redirect_url");
+
+        if (redirectUrl == null || redirectUrl.isBlank()) {
+            redirectUrl = "http://localhost:3000";
+        }
+
+        // Build error redirect URL
+        StringBuilder finalUrl = new StringBuilder(redirectUrl);
+        if (!redirectUrl.contains("/oauth-callback") && !redirectUrl.endsWith("/")) {
+            finalUrl.append("/oauth-callback");
+        } else if (redirectUrl.endsWith("/")) {
+            finalUrl.append("oauth-callback");
+        }
+
+        finalUrl.append("?success=false");
+        finalUrl.append("&error=").append(reason != null ? reason : "unknown");
+
+        if (existingRole != null) {
+            finalUrl.append("&existing_role=").append(existingRole);
+        }
+
+        if (errorMessage != null) {
+            finalUrl.append("&message=").append(java.net.URLEncoder.encode(errorMessage, "UTF-8"));
+        }
+
+        // Clear error from session
+        session.removeAttribute("oauth_error");
+        session.removeAttribute("oauth_redirect_url");
+
+        response.sendRedirect(finalUrl.toString());
+    }
 }

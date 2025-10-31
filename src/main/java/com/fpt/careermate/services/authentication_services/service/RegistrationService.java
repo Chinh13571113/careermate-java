@@ -41,10 +41,19 @@ public class RegistrationService {
      */
     @Transactional
     public Account registerRecruiter(RecruiterRegistrationRequest request) {
-        // Check if email already exists
-        if (accountRepo.findByEmail(request.getEmail()).isPresent()) {
-            throw new AppException(ErrorCode.DUPLICATE_EMAIL);
-        }
+        // Check if email already exists with any role (prevent role conflicts)
+        accountRepo.findByEmail(request.getEmail()).ifPresent(existingAccount -> {
+            // Check if account has a different role
+            boolean hasRecruiterRole = existingAccount.getRoles().stream()
+                    .anyMatch(role -> PredefineRole.RECRUITER_ROLE.equalsIgnoreCase(role.getName()));
+
+            if (hasRecruiterRole) {
+                throw new AppException(ErrorCode.DUPLICATE_EMAIL);
+            } else {
+                // Account exists with CANDIDATE role - cannot register as RECRUITER
+                throw new AppException(ErrorCode.ROLE_CONFLICT);
+            }
+        });
 
         // Validate organization info
         validateOrganizationInfo(request.getOrganizationInfo());
@@ -74,15 +83,23 @@ public class RegistrationService {
     }
 
     /**
-     * Create recruiter profile for Google OAuth users
-     * Upgrades existing CANDIDATE account to RECRUITER with PENDING status
-     * User must fill organization info form after OAuth login
+     * Complete recruiter profile for Google OAuth users
+     * Account already has RECRUITER role and PENDING status from OAuth handler
+     * This method only creates the Recruiter entity with organization info
      */
     @Transactional
-    public Recruiter createRecruiterProfileForOAuth(String email, RecruiterRegistrationRequest.OrganizationInfo orgInfo) {
-        // Find existing account (from OAuth login - has CANDIDATE role and ACTIVE status)
+    public Recruiter completeRecruiterProfileForOAuth(String email, RecruiterRegistrationRequest.OrganizationInfo orgInfo) {
+        // Find existing account (already has RECRUITER role and PENDING status from OAuth)
         Account account = accountRepo.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // Verify account has RECRUITER role (should have been set by OAuth handler)
+        boolean hasRecruiterRole = account.getRoles().stream()
+                .anyMatch(role -> PredefineRole.RECRUITER_ROLE.equalsIgnoreCase(role.getName()));
+
+        if (!hasRecruiterRole) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         // Check if recruiter profile already exists
         if (recruiterRepo.findByAccount_Id(account.getId()).isPresent()) {
@@ -92,21 +109,11 @@ public class RegistrationService {
         // Validate organization info
         validateOrganizationInfo(orgInfo);
 
-        // Upgrade account: Add RECRUITER role and set status to PENDING
-        Role recruiterRole = roleRepo.findByName(PredefineRole.RECRUITER_ROLE)
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-
-        Set<Role> roles = new HashSet<>(account.getRoles());
-        roles.add(recruiterRole); // Keep CANDIDATE role, add RECRUITER
-        account.setRoles(roles);
-        account.setStatus("PENDING"); // Change status to PENDING - cannot login until approved
-        accountRepo.save(account);
-
-        // Create recruiter profile
+        // Create recruiter profile (account already has correct role and status)
         Recruiter recruiter = createRecruiterProfile(account, orgInfo);
         Recruiter savedRecruiter = recruiterRepo.save(recruiter);
 
-        log.info("Recruiter profile created for OAuth user with PENDING status: {}", email);
+        log.info("Recruiter profile completed for OAuth user: {}", email);
 
         return savedRecruiter;
     }
