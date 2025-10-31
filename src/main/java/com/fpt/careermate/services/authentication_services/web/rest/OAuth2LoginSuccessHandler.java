@@ -42,37 +42,31 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         HttpSession session = request.getSession();
         String accountType = (String) session.getAttribute(LoginWithGoogle.ACCOUNT_TYPE_SESSION_KEY);
-        boolean isRecruiter = "recruiter".equalsIgnoreCase(accountType);
         session.removeAttribute(LoginWithGoogle.ACCOUNT_TYPE_SESSION_KEY);
 
         Account account = accountRepo.findByEmail(email).orElse(null);
+        boolean isRecruiter;
 
-        // Check if account already exists with a different role type
+        // Check if account already exists
         if (account != null && account.getRoles() != null && !account.getRoles().isEmpty()) {
-            // Account exists - check if trying to register with different role
+            // EXISTING ACCOUNT: Use the account's actual role from database
+            // Ignore the session accountType - user is logging in, not registering
             boolean hasRecruiterRole = account.getRoles().stream()
                     .anyMatch(role -> PredefineRole.RECRUITER_ROLE.equalsIgnoreCase(role.getName()));
             boolean hasCandidateRole = account.getRoles().stream()
                     .anyMatch(role -> PredefineRole.USER_ROLE.equalsIgnoreCase(role.getName()));
 
-            // Prevent role conflict: cannot add recruiter role to existing candidate account or vice versa
-            if (isRecruiter && hasCandidateRole) {
-                log.warn("Account {} already exists as CANDIDATE. Cannot register as RECRUITER.", email);
-                session.setAttribute("oauth_error", "This email is already registered as a Candidate account. Please use a different email for Recruiter registration.");
-                response.sendRedirect("/api/oauth2/google/error?reason=role_conflict&existing_role=candidate");
-                return;
-            }
+            // Set isRecruiter based on actual account role
+            isRecruiter = hasRecruiterRole;
 
-            if (!isRecruiter && hasRecruiterRole) {
-                log.warn("Account {} already exists as RECRUITER. Cannot register as CANDIDATE.", email);
-                session.setAttribute("oauth_error", "This email is already registered as a Recruiter account. Please login as a Recruiter.");
-                response.sendRedirect("/api/oauth2/google/error?reason=role_conflict&existing_role=recruiter");
-                return;
-            }
+            log.info("Existing account {} logging in with Google. Role: {}",
+                     email, isRecruiter ? "RECRUITER" : "CANDIDATE");
 
-            // Account exists with correct role - proceed with login (no role changes)
-            log.info("Existing account {} logging in with Google", email);
+            // No role conflict checks for existing accounts during sign-in
+            // They already have a role, just let them log in
         } else if (account == null) {
+            // NEW ACCOUNT: Use session accountType for registration
+            isRecruiter = "recruiter".equalsIgnoreCase(accountType);
             // New account - create it
             account = new Account();
             account.setEmail(email);
@@ -98,9 +92,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             account.setRoles(roles);
             account = accountRepo.save(account);
             log.info("Created new account {} with role: {}", email, isRecruiter ? "RECRUITER" : "CANDIDATE");
+        } else {
+            // Edge case: Account exists but has no roles (shouldn't happen)
+            // Default to candidate role based on session or false
+            isRecruiter = "recruiter".equalsIgnoreCase(accountType);
+            log.warn("Account {} exists but has no roles. Treating as {} registration.",
+                     email, isRecruiter ? "RECRUITER" : "CANDIDATE");
         }
 
-        boolean hasRecruiterRole = account.getRoles().stream()
+        boolean hasRecruiterRole = account.getRoles() != null && account.getRoles().stream()
                 .anyMatch(role -> PredefineRole.RECRUITER_ROLE.equalsIgnoreCase(role.getName()));
         boolean profileCompleted = hasRecruiterRole &&
                 recruiterRepo.findByAccount_Id(account.getId()).isPresent();
