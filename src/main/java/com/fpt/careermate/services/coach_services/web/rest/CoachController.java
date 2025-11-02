@@ -3,10 +3,7 @@ package com.fpt.careermate.services.coach_services.web.rest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fpt.careermate.common.response.ApiResponse;
 import com.fpt.careermate.services.coach_services.service.CoachImp;
-import com.fpt.careermate.services.coach_services.service.dto.response.CourseListResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.CourseResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.QuestionResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.RecommendedCourseResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
@@ -47,9 +44,13 @@ public class CoachController {
     @PostMapping("/course/lesson/generation/{lessonId}")
     @Operation(description = """
             Generate lesson content by lesson ID if not exists, return existing lesson content otherwise
+            if exists in Redis cache, return from cache
+            else generate new lesson content by LLM and store in Redis cache and Postgres
+            input: lesson ID
+            output: generated lesson content including lesson overview, core content, exercises and conclusion.
             """)
-    public ApiResponse<String> generateLessonContent(@PathVariable int lessonId) throws JsonProcessingException {
-        return ApiResponse.<String>builder()
+    public ApiResponse<LessonContentResponse> generateLessonContent(@PathVariable int lessonId) throws JsonProcessingException {
+        return ApiResponse.<LessonContentResponse>builder()
                 .result(coachImp.generateLesson(lessonId))
                 .code(200)
                 .message("success")

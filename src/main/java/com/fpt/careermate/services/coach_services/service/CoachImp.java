@@ -13,10 +13,7 @@ import com.fpt.careermate.services.coach_services.domain.Module;
 import com.fpt.careermate.services.coach_services.repository.CourseRepo;
 import com.fpt.careermate.services.coach_services.repository.LessonRepo;
 import com.fpt.careermate.services.coach_services.repository.QuestionRepo;
-import com.fpt.careermate.services.coach_services.service.dto.response.CourseListResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.CourseResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.QuestionResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.RecommendedCourseResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import com.fpt.careermate.services.coach_services.service.impl.CoachService;
 import com.fpt.careermate.services.coach_services.service.mapper.CoachMapper;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
@@ -28,6 +25,7 @@ import io.weaviate.client.v1.graphql.query.argument.NearTextArgument;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
+import jakarta.annotation.PreDestroy;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -76,7 +74,7 @@ public class CoachImp implements CoachService {
         Optional<Course> exstingCourse =
                 courseRepo.findByTitleAndCandidate_CandidateId(title, candidate.getCandidateId());
         if (exstingCourse.isPresent()) {
-            jedis.close();
+
             log.info("Course already exists in Postgres for title: {}", title);
             return coachMapper.toCourseResponse(exstingCourse.get());
         }
@@ -87,7 +85,7 @@ public class CoachImp implements CoachService {
             // Lưu khóa học vào postgres từ Redis
             Course savedPostgres = saveCourseFromJson(title, jedis.hget(title, "content"));
             log.info("Course found in Redis cache for title: {}", title);
-            jedis.close();
+
             return coachMapper.toCourseResponse(savedPostgres);
         }
 
@@ -155,7 +153,7 @@ public class CoachImp implements CoachService {
         courseMap.put("content", jsonString);
         jedis.hset(title, courseMap);
         jedis.expire(title, 86400); // set expiration time to 24 hours
-        jedis.close();
+
 
         // Lưu khóa học vào database
         Course savedPostgres = saveCourseFromJson(title, jsonString);
@@ -202,41 +200,99 @@ public class CoachImp implements CoachService {
         return saved;
     }
 
-    // Generate lesson for course
+    // Generate lesson content for course
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
-    public String generateLesson(int lessonId) throws JsonProcessingException {
-        String url = BASE_URL + "generate-course/lesson";
-
-        // Check if lesson exists
+    public LessonContentResponse generateLesson(int lessonId) throws JsonProcessingException {
+        // Kiểm tra nếu lesson không tồn tại trong postgres vì có thể truyền lessonId không hợp lệ
         Optional<Lesson> exstingLesson = lessonRepo.findById(lessonId);
         if (exstingLesson.isEmpty()) {
             throw new AppException(ErrorCode.LESSON_NOT_FOUND);
         }
-
-        // Check if lesson content already exists
         Lesson lesson = exstingLesson.get();
-        if (lesson.getContent() != null && !lesson.getContent().isEmpty()) {
-            return lesson.getContent();
+
+        // Check if lesson content already exists in Postgres
+        if (lesson.getCoreContent() != null && !lesson.getCoreContent().isEmpty()) {
+            log.info("Lesson content already exists in Postgres for lesson ID: {}", lessonId);
+            return coachMapper.toLessonContentResponse(lesson);
         }
 
-        // If lesson content is empty, call API to generate content
-        Map<String, String> body = Map.of("lesson", lesson.getTitle());
-
-        // Call Django API
-        Map<String, Object> data = apiClient.post(url, apiClient.getToken(), body);
-
-        // Save to database
-        Object contentObj = data.get("content");
-        if (contentObj instanceof String) {
-            lesson.setContent((String) contentObj);
-        } else {
-            // fallback: convert object to JSON text
-            String contentJson = new ObjectMapper().writeValueAsString(contentObj);
-            lesson.setContent(contentJson);
+        // Kiểm tra nếu lesson content chung đã có trong Redis cache
+        boolean existsedRedisLesson = jedis.exists(lesson.getTitle());
+        if (existsedRedisLesson) {
+            // Lưu nội dung lesson vào postgres từ Redis
+            String jsonString = jedis.hget(lesson.getTitle(), "content");
+            log.info("Lesson content found in Redis cache for lesson title: {}", lesson.getTitle());
+            Lesson savedPostgres = saveLessonContentFromJson(lesson, jsonString);
+            return coachMapper.toLessonContentResponse(savedPostgres);
         }
 
-        return lessonRepo.save(lesson).getContent();
+        // Nếu chưa tồn tại nội dung của lesson, tạo nội dung lesson mới bằng cách gọi mô hình ngôn ngữ lớn (LLM)
+        // Thiết lập vai trò, phong cách, quy tắc
+        SystemMessage systemMessage = new SystemMessage("""
+                You are an expert lesson content generation assistant.
+                """
+        );
+
+        // Đưa yêu cầu cụ thể
+        UserMessage userMessage = new UserMessage(String.format("""
+                Generate a comprehensive learning description for the lesson: "%s".
+                Structure the course in the following JSON format:
+                {{
+                     "lesson_overview": "<brief overview of the lesson>",
+                     "core_content": "<detailed lesson content with 150 words>",
+                     "exercise": "<a exercise related to the lesson>" (type is String),
+                     "conclusion" "<summary of the lesson>"
+                }}
+                """, lesson.getTitle())
+        );
+
+        // tạo prompt từ các message
+        // "đóng gói” lời dặn + câu hỏi → thành 1 gói hoàn chỉnh
+        Prompt prompt = new Prompt(systemMessage, userMessage);
+
+        // gửi prompt đến model
+        // chat client: Là đối tượng đại diện cho client kết nối đến mô hình ngôn ngữ. Mục đích:
+        ChatResponse response = chatClient
+                .prompt(prompt)
+                .call() // Bước thực thi
+                .chatResponse(); // Lấy về đối tượng phản hồi dạng chat
+
+        // lấy content và token usage
+        String content = response.getResult().getOutput().getText();
+        long totalTokens = response.getMetadata().getUsage().getTotalTokens();
+        long completionTokens = response.getMetadata().getUsage().getCompletionTokens();
+        long promptTokens = response.getMetadata().getUsage().getPromptTokens();
+        log.info("Generated lesson content with {} totalTokens", totalTokens);
+        log.info("Generated lesson content with {} completionTokens", completionTokens);
+        log.info("Generated lesson content with {} promptTokens", promptTokens);
+
+        // Loại bỏ các ký tự không cần thiết để có được chuỗi JSON hợp lệ
+        String jsonString = content.trim();
+        jsonString = jsonString.replace("```json", "");
+        jsonString = jsonString.replace("```", "").trim();
+
+        // Save to Redis cache
+        Map<String, String> lessonContentMap = new HashMap<>();
+        lessonContentMap.put("content", jsonString);
+        jedis.hset(lesson.getTitle(), lessonContentMap);
+//        jedis.expire(title, 86400); // set expiration time to 24 hours
+
+
+        // Parse JSON and set lesson content
+        Lesson savedPostgres = saveLessonContentFromJson(lesson, jsonString);
+
+        return coachMapper.toLessonContentResponse(savedPostgres);
+    }
+
+    private Lesson saveLessonContentFromJson(Lesson lesson, String jsonString) throws JsonProcessingException{
+        // Parse JSON and set lesson content
+        JsonNode root = objectMapper.readTree(jsonString);
+        lesson.setLessonOverview(root.get("lesson_overview").asText());
+        lesson.setCoreContent(root.get("core_content").asText());
+        lesson.setExercise(root.get("exercise").asText());
+        lesson.setConclusion(root.get("conclusion").asText());
+        return lessonRepo.save(lesson);
     }
 
     // Get my courses
@@ -420,6 +476,12 @@ public class CoachImp implements CoachService {
 
         // Trả về danh sách khóa học gợi ý
         return recommendedCourseResponseList;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        log.info("Closing Redis connection...");
+        jedis.close(); // chỉ đóng Redis khi app tắt
     }
 
 }
