@@ -350,7 +350,7 @@ public class CoachImp implements CoachService {
 
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
-    public List<QuestionResponse> generateQuestionList(int lessonId) {
+    public List<QuestionResponse> generateQuestionList(int lessonId) throws JsonProcessingException {
         // Check if lesson exists
         Optional<Lesson> exstingLesson = lessonRepo.findById(lessonId);
         if (exstingLesson.isEmpty()) {
@@ -366,7 +366,7 @@ public class CoachImp implements CoachService {
         }
 
         // KIểm tra nếu question list chung đã có trong Redis cache
-        boolean existsedRedisQuestion = jedis.exists("question:"+lesson.getTitle());
+        boolean existsedRedisQuestion = jedis.exists("question:" + lesson.getTitle());
         if (existsedRedisQuestion) {
             // Lưu question list vào postgres từ Redis
             String jsonString = jedis.hget("question:" + lesson.getTitle(), "content");
@@ -434,7 +434,7 @@ public class CoachImp implements CoachService {
         // Save to Redis cache
         Map<String, String> questionMap = new HashMap<>();
         questionMap.put("content", jsonString);
-        jedis.hset("question:"+lesson.getTitle(), questionMap);
+        jedis.hset("question:" + lesson.getTitle(), questionMap);
 //        jedis.expire(title, 86400); // set expiration time to 24 hours
 
         // Parse JSON and save questions to Postgres
@@ -443,16 +443,10 @@ public class CoachImp implements CoachService {
         return coachMapper.toQuestionResponseList(savedQuestions);
     }
 
-    private List<Question> saveQuestionFromJson(Lesson lesson, String jsonString) {
+    private List<Question> saveQuestionFromJson(Lesson lesson, String jsonString) throws JsonProcessingException {
         // Parse JSON and save questions to Postgres
         List<Question> savedQuestions = new ArrayList<>();
-        JsonNode root = null;
-        try {
-            root = objectMapper.readTree(jsonString);
-        } catch (JsonProcessingException e) {
-            log.error(e.getMessage());
-        }
-
+        JsonNode root = objectMapper.readTree(jsonString);
         for (JsonNode questionNode : root.get("questions")) {
             Question question = new Question();
             question.setTitle(questionNode.get("question").asText());
@@ -468,7 +462,7 @@ public class CoachImp implements CoachService {
                 option.setQuestion(question);
 
                 // Save correct option
-                if(option.getLabel().equals(questionNode.get("correct_option").asText())) {
+                if (option.getLabel().equals(questionNode.get("correct_option").asText())) {
                     question.setCorrectOption(option);
                 }
 

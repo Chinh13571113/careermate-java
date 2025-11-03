@@ -80,7 +80,7 @@ public class CoachController {
 
     @PostMapping("/course/lesson/question/generation/{lessonId}")
     @Operation(description = "if question not exists, generate question for lesson by lesson ID, return existing question otherwise")
-    public ApiResponse<List<QuestionResponse>> generateQuestionList(@PathVariable int lessonId) {
+    public ApiResponse<List<QuestionResponse>> generateQuestionList(@PathVariable int lessonId) throws JsonProcessingException {
         return ApiResponse.<List<QuestionResponse>>builder()
                 .result(coachImp.generateQuestionList(lessonId))
                 .code(200)
