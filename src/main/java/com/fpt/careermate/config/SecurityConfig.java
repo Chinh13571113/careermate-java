@@ -47,7 +47,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "api/payment/**",
             // Public blog endpoints - no authentication required
-            "/blogs",
+            "api/coach/course/recommendation",
             "/blogs/**",
             // Public job postings endpoints - no authentication required
             "/api/job-postings",
