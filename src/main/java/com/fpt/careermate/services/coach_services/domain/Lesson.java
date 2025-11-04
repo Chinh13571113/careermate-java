@@ -24,7 +24,16 @@ public class Lesson {
     String title;
 
     @Column(columnDefinition = "TEXT")
-    String content;
+    String lessonOverview;
+
+    @Column(columnDefinition = "TEXT")
+    String coreContent;
+
+    @Column(columnDefinition = "TEXT")
+    String exercise;
+
+    @Column(columnDefinition = "TEXT")
+    String conclusion;
 
     boolean marked;
 

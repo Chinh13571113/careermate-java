@@ -4,10 +4,7 @@ import com.fpt.careermate.services.coach_services.domain.Course;
 import com.fpt.careermate.services.coach_services.domain.Lesson;
 import com.fpt.careermate.services.coach_services.domain.Module;
 import com.fpt.careermate.services.coach_services.domain.Question;
-import com.fpt.careermate.services.coach_services.service.dto.response.CourseResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.LessonResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.ModuleResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.QuestionResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -22,4 +19,6 @@ public interface CoachMapper {
 
     QuestionResponse toQuestionResponse(Question question);
     List<QuestionResponse> toQuestionResponseList(List<Question> questions);
+
+    LessonContentResponse toLessonContentResponse(Lesson lesson);
 }
