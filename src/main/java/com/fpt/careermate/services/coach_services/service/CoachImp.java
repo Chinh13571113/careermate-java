@@ -1,21 +1,8 @@
 package com.fpt.careermate.services.coach_services.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fpt.careermate.common.exception.AppException;
-import com.fpt.careermate.common.exception.ErrorCode;
-import com.fpt.careermate.services.account_services.domain.Account;
-import com.fpt.careermate.services.authentication_services.service.AuthenticationImp;
 import com.fpt.careermate.services.coach_services.domain.*;
-import com.fpt.careermate.services.coach_services.domain.Module;
-import com.fpt.careermate.services.coach_services.repository.CourseRepo;
-import com.fpt.careermate.services.coach_services.repository.LessonRepo;
-import com.fpt.careermate.services.coach_services.repository.QuestionRepo;
 import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import com.fpt.careermate.services.coach_services.service.impl.CoachService;
-import com.fpt.careermate.services.coach_services.service.mapper.CoachMapper;
-import com.fpt.careermate.services.profile_services.domain.Candidate;
-import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.v1.graphql.model.GraphQLResponse;
@@ -23,24 +10,13 @@ import io.weaviate.client.v1.graphql.query.argument.NearTextArgument;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
-import jakarta.annotation.PreDestroy;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.*;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import redis.clients.jedis.UnifiedJedis;
 
 
 @Service
@@ -54,7 +30,8 @@ public class CoachImp implements CoachService {
     @Override
     // Hàm gợi ý khóa học dựa trên vai trò (role) của người dùng
     public List<RecommendedCourseResponse> recommendCourse(String role) {
-        String collectionName = "Course2";
+        String collectionName = "Course";
+        String[] target_vector = { "description_vector" };
 
         // Tạo bộ lọc tìm kiếm gần theo văn bản (nearText)
         // "concepts" là mảng các từ khóa hoặc cụm từ dùng để tìm kiếm ngữ nghĩa
@@ -62,7 +39,8 @@ public class CoachImp implements CoachService {
         NearTextArgument nearText = NearTextArgument.builder()
                 // vì SDK được sinh máy móc từ định nghĩa GraphQL, nên nó phản ánh y nguyên kiểu danh sách.
                 .concepts(new String[]{role})
-                .certainty(0.7f)
+                .certainty(0.71f)
+                .targetVectors(target_vector) // Sử dụng trường vector tùy chỉnh "description_vector"
                 .build();
 
         // Xác định các trường cần lấy từ đối tượng "Course" trong Weaviate
@@ -70,7 +48,7 @@ public class CoachImp implements CoachService {
         Fields fields = Fields.builder()
                 .fields(new Field[]{
                         Field.builder().name("title").build(),
-                        Field.builder().name("link").build(),
+                        Field.builder().name("url").build(),
                         Field.builder().name("_additional").fields(new Field[]{
                                 Field.builder().name("certainty").build()
                         }).build()
@@ -101,7 +79,7 @@ public class CoachImp implements CoachService {
         List<RecommendedCourseResponse> recommendedCourseResponseList = new ArrayList<>();
         courseData.forEach(course -> {
             String title = (String) course.get("title");
-            String link = (String) course.get("link");
+            String link = (String) course.get("url");
             Map<String, Object> additional = (Map<String, Object>) course.get("_additional");
             Double similarityScore = (Double) additional.get("certainty");
 
