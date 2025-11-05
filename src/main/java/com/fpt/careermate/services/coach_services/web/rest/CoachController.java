@@ -1,7 +1,8 @@
 package com.fpt.careermate.services.coach_services.web.rest;
 
 import com.fpt.careermate.common.response.ApiResponse;
-import com.fpt.careermate.services.coach_services.service.CoachImp;
+import com.fpt.careermate.services.coach_services.service.CourseImp;
+import com.fpt.careermate.services.coach_services.service.dto.request.CourseCreationRequest;
 import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,7 +22,7 @@ import java.util.List;
 @Slf4j
 public class CoachController {
 
-    CoachImp coachImp;
+    CourseImp courseImp;
 
     @GetMapping("/course/recommendation")
     @Operation(description = """
@@ -32,7 +33,22 @@ public class CoachController {
             """)
     public ApiResponse<List<RecommendedCourseResponse>> recommendCourses(@RequestParam String role) {
         return ApiResponse.<List<RecommendedCourseResponse>>builder()
-                .result(coachImp.recommendCourse(role))
+                .result(courseImp.recommendCourse(role))
+                .code(200)
+                .message("success")
+                .build();
+    }
+
+    @PostMapping("/course")
+    @Operation(description = """
+                Add a new course to Postgres when candidate select a course from recommendation list
+                input: CourseCreationRequest including title and url
+                output: success message
+                Need to login as candidate to access this API
+            """)
+    public ApiResponse<String> addCourse(@RequestBody CourseCreationRequest request) {
+        courseImp.addCourse(request);
+        return ApiResponse.<String>builder()
                 .code(200)
                 .message("success")
                 .build();

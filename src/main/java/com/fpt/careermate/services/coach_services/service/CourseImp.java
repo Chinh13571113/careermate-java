@@ -1,8 +1,12 @@
 package com.fpt.careermate.services.coach_services.service;
 
-import com.fpt.careermate.services.coach_services.domain.*;
+import com.fpt.careermate.common.util.CoachUtil;
+import com.fpt.careermate.services.coach_services.domain.Course;
+import com.fpt.careermate.services.coach_services.repository.CourseRepo;
+import com.fpt.careermate.services.coach_services.service.dto.request.CourseCreationRequest;
 import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import com.fpt.careermate.services.coach_services.service.impl.CoachService;
+import com.fpt.careermate.services.coach_services.service.mapper.CourseMapper;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.v1.graphql.model.GraphQLResponse;
@@ -14,8 +18,11 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cglib.core.Local;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.*;
 
 
@@ -23,9 +30,12 @@ import java.util.*;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class CoachImp implements CoachService {
+public class CourseImp implements CoachService {
 
     WeaviateClient client;
+    CourseMapper courseMapper;
+    CourseRepo courseRepo;
+    CoachUtil coachUtil;
 
     @Override
     // Hàm gợi ý khóa học dựa trên vai trò (role) của người dùng
@@ -79,16 +89,28 @@ public class CoachImp implements CoachService {
         List<RecommendedCourseResponse> recommendedCourseResponseList = new ArrayList<>();
         courseData.forEach(course -> {
             String title = (String) course.get("title");
-            String link = (String) course.get("url");
+            String url = (String) course.get("url");
             Map<String, Object> additional = (Map<String, Object>) course.get("_additional");
             Double similarityScore = (Double) additional.get("certainty");
 
             // Thêm vào danh sách kết quả trả về
-            recommendedCourseResponseList.add(new RecommendedCourseResponse(title, link, similarityScore));
+            recommendedCourseResponseList.add(new RecommendedCourseResponse(title, url, similarityScore));
         });
 
         // Trả về danh sách khóa học gợi ý
         return recommendedCourseResponseList;
     }
 
+    // Hàm thêm khóa học khi candidate chọn course được gợi ý
+    @Override
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public void addCourse(CourseCreationRequest request){
+        Course course = courseMapper.toCourse(request);
+        // Thiết lập ngày tạo khóa học và liên kết với candidate
+        course.setCreatedAt(LocalDate.now());
+        course.setCandidate(coachUtil.getCurrentCandidate());
+
+        // Lưu course vào Postgres
+        courseRepo.save(course);
+    }
 }

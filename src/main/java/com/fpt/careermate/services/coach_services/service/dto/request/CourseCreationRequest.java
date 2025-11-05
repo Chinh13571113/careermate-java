@@ -1,5 +1,6 @@
-package com.fpt.careermate.services.coach_services.service.dto.response;
+package com.fpt.careermate.services.coach_services.service.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -8,8 +9,12 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RecommendedCourseResponse {
+public class CourseCreationRequest {
+
+    @NotBlank
     String title;
+
+    @NotBlank
     String url;
-    double similarityScore;
+
 }
