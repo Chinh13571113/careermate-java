@@ -36,5 +36,14 @@ public interface CandidateRecommendationService {
      * @param candidateId The candidate ID to delete
      */
     void deleteCandidateFromWeaviate(int candidateId);
+
+    void getCollection();
+
+    /**
+     * Recreate Weaviate schema with proper vectorization settings
+     * This will delete the existing schema and create a new one
+     * After calling this, you must re-sync all candidates
+     */
+    void recreateSchema();
 }
 

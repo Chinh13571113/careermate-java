@@ -3,6 +3,7 @@ package com.fpt.careermate.services.recommendation.web.rest;
 import com.fpt.careermate.common.response.ApiResponse;
 import com.fpt.careermate.services.recommendation.dto.RecommendationResponseDTO;
 import com.fpt.careermate.services.recommendation.service.CandidateRecommendationService;
+import com.fpt.careermate.services.recommendation.service.CandidateRecommendationServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -25,7 +26,7 @@ public class CandidateRecommendationController {
     CandidateRecommendationService recommendationService;
 
     @GetMapping("/recruiter/recommendations/job/{jobPostingId}")
-    @PreAuthorize("hasRole('RECRUITER')")
+    @PreAuthorize("hasAnyRole('RECRUITER', 'ADMIN')")
     @SecurityRequirement(name = "bearerToken")
     @Operation(
             summary = "Get recommended candidates for a job posting",
@@ -103,6 +104,35 @@ public class CandidateRecommendationController {
         return ApiResponse.<String>builder()
                 .result("Candidate deleted from recommendation system")
                 .build();
+    }
+
+    @GetMapping("/class")
+    public ApiResponse<String> getCollection() {
+        recommendationService.getCollection();
+        return ApiResponse.<String>builder()
+                .result("Get collection successfully")
+                .build();
+    }
+
+    @PostMapping("/admin/recommendations/recreate-schema")
+    @PreAuthorize("hasRole('ADMIN')")
+    @SecurityRequirement(name = "bearerToken")
+    @Operation(
+            summary = "Recreate Weaviate schema with proper vectorization",
+            description = "Deletes and recreates the schema with text2vec-weaviate embeddings. After calling this, you MUST re-sync all candidates."
+    )
+    public ApiResponse<String> recreateSchema() {
+        log.info("🔄 Admin recreating Weaviate schema with proper vectorization...");
+        try {
+            recommendationService.recreateSchema();
+            log.info("✅ Schema recreated successfully");
+            return ApiResponse.<String>builder()
+                    .result("Schema recreated successfully. Please re-sync all candidates now.")
+                    .build();
+        } catch (Exception e) {
+            log.error("❌ Failed to recreate schema: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 }
 

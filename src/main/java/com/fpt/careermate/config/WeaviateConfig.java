@@ -20,6 +20,10 @@ public class WeaviateConfig {
     @Value("${weaviate.api-key:}")
     private String apiKey;
 
+    @Value("${weaviate.vectorizer:text2vec-weaviate}")
+    private String vectorizer;
+
+
     @Bean
     public WeaviateClient weaviateClient() {
         try {
@@ -35,16 +39,22 @@ public class WeaviateConfig {
             cleanUrl = cleanUrl.replaceFirst("^https?://", "");
 
             Config config;
+            Map<String, String> headers = new HashMap<>();
+
             if (apiKey != null && !apiKey.isEmpty()) {
                 String cleanApiKey = apiKey.trim();
-                Map<String, String> headers = new HashMap<>();
                 headers.put("Authorization", "Bearer " + cleanApiKey);
-                config = new Config(scheme, cleanUrl, headers);
                 log.info("🔐 Using authenticated Weaviate connection");
             } else {
-                config = new Config(scheme, cleanUrl);
                 log.info("🔓 Using non-authenticated Weaviate connection");
             }
+
+            // Add cluster URL header for Weaviate Cloud hosted vectorization
+            // This is required for text2vec-weaviate vectorizer
+            headers.put("X-Weaviate-Cluster-Url", scheme + "://" + cleanUrl);
+            log.info("🌐 Adding cluster URL header for hosted vectorization: {}://{}", scheme, cleanUrl);
+
+            config = new Config(scheme, cleanUrl, headers);
 
             WeaviateClient client = new WeaviateClient(config);
             log.info("✅ Weaviate client initialized successfully at {}://{}", scheme, cleanUrl);
@@ -54,5 +64,8 @@ public class WeaviateConfig {
             throw new RuntimeException("Failed to connect to Weaviate", e);
         }
     }
-}
 
+    public String getVectorizer() {
+        return vectorizer;
+    }
+}
