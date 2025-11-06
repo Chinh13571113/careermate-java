@@ -70,7 +70,8 @@ public class JobPostingImp implements JobPostingService {
 
         // Get work model and check exist
         Optional<WorkModel> exstingWorkModel = workModelRepo.findByName(request.getWorkModel());
-        if (exstingWorkModel.isEmpty()) throw new AppException(ErrorCode.WORK_MODEL_NOT_FOUND);
+        if (exstingWorkModel.isEmpty())
+            throw new AppException(ErrorCode.WORK_MODEL_NOT_FOUND);
 
         Recruiter recruiter = getMyRecruiter();
 
@@ -133,8 +134,7 @@ public class JobPostingImp implements JobPostingService {
                             .id(jd.getJdSkill().getId())
                             .name(jd.getJdSkill().getName())
                             .mustToHave(jd.isMustToHave())
-                            .build()
-            );
+                            .build());
         });
 
         jpResponse.setSkills(skills);
@@ -148,18 +148,48 @@ public class JobPostingImp implements JobPostingService {
     public void updateJobPosting(int id, JobPostingCreationRequest request) {
         JobPosting jobPosting = findJobPostingEntityForRecruiterById(id);
 
-        // Check job posting status
+        // Disallow modifications for DELETED or PAUSED postings
         if (Set.of(
                 StatusJobPosting.DELETED,
-                StatusJobPosting.ACTIVE,
-                StatusJobPosting.PAUSED,
-                StatusJobPosting.EXPIRED).contains(jobPosting.getStatus()))
+                StatusJobPosting.PAUSED).contains(jobPosting.getStatus())) {
             throw new AppException(ErrorCode.CANNOT_MODIFY_JOB_POSTING);
+        }
 
+        // If posting is ACTIVE or EXPIRED, only allow changing the expiration date.
+        // This prevents changing other fields while candidates may apply (ACTIVE) or
+        // allows reactivating an expired posting by updating its date (EXPIRED).
+        if (jobPosting.getStatus().equals(StatusJobPosting.ACTIVE) ||
+                jobPosting.getStatus().equals(StatusJobPosting.EXPIRED)) {
+            // Validate new expiration date (must be in the future)
+            jobPostingValidator.validateExpirationDate(request.getExpirationDate());
+
+            // Ensure new expiration date is not before the creation date
+            if (request.getExpirationDate().isBefore(jobPosting.getCreateAt())) {
+                throw new AppException(ErrorCode.INVALID_EXPIRATION_DATE);
+            }
+
+            jobPosting.setExpirationDate(request.getExpirationDate());
+
+            // If expired posting date is being updated, change status to ACTIVE
+            if (jobPosting.getStatus().equals(StatusJobPosting.EXPIRED)) {
+                jobPosting.setStatus(StatusJobPosting.ACTIVE);
+            }
+
+            jobPostingRepo.save(jobPosting);
+            return;
+        }
+
+        // For PENDING or REJECTED postings allow full update
         // Validate request
         jobPostingValidator.checkDuplicateJobPostingTitleAndNotCurrentRecruiter(request.getTitle(),
                 jobPosting.getRecruiter().getId());
         jobPostingValidator.validateExpirationDate(request.getExpirationDate());
+
+        // Ensure expiration date is not before the creation date
+        if (request.getExpirationDate().isBefore(jobPosting.getCreateAt())) {
+            throw new AppException(ErrorCode.INVALID_EXPIRATION_DATE);
+        }
+
         // Validate JdSkill exist
         jobPostingValidator.validateJdSkill(request.getJdSkills());
 
@@ -315,7 +345,7 @@ public class JobPostingImp implements JobPostingService {
     @Transactional
     @Override
     public void approveOrRejectJobPosting(int id,
-                                          JobPostingApprovalRequest request) {
+            JobPostingApprovalRequest request) {
         log.info("Admin processing approval/rejection for job posting ID: {}", id);
 
         // Get job posting
@@ -416,7 +446,8 @@ public class JobPostingImp implements JobPostingService {
     @Override
     public com.fpt.careermate.common.response.PageResponse<JobPostingForCandidateResponse> getAllApprovedJobPostings(
             String keyword, org.springframework.data.domain.Pageable pageable) {
-        log.info("Public API: Fetching approved job postings - keyword: {}, page: {}", keyword, pageable.getPageNumber());
+        log.info("Public API: Fetching approved job postings - keyword: {}, page: {}", keyword,
+                pageable.getPageNumber());
 
         org.springframework.data.domain.Page<JobPosting> jobPostingPage;
         LocalDate currentDate = LocalDate.now();
@@ -427,15 +458,13 @@ public class JobPostingImp implements JobPostingService {
                     StatusJobPosting.ACTIVE,
                     currentDate,
                     keyword.trim(),
-                    pageable
-            );
+                    pageable);
         } else {
             // Get all approved job postings that haven't expired
             jobPostingPage = jobPostingRepo.findAllByStatusAndExpirationDateAfterOrderByCreateAtDesc(
                     StatusJobPosting.ACTIVE,
                     currentDate,
-                    pageable
-            );
+                    pageable);
         }
 
         List<JobPostingForCandidateResponse> responses = jobPostingPage.getContent()
@@ -448,8 +477,7 @@ public class JobPostingImp implements JobPostingService {
                 jobPostingPage.getNumber(),
                 jobPostingPage.getSize(),
                 jobPostingPage.getTotalElements(),
-                jobPostingPage.getTotalPages()
-        );
+                jobPostingPage.getTotalPages());
     }
 
     // Public API: Get job posting detail by ID (only approved ones)
@@ -484,14 +512,14 @@ public class JobPostingImp implements JobPostingService {
 
         // Build recruiter company info
         Recruiter recruiter = jobPosting.getRecruiter();
-        JobPostingForCandidateResponse.RecruiterCompanyInfo recruiterInfo =
-                JobPostingForCandidateResponse.RecruiterCompanyInfo.builder()
-                        .recruiterId(recruiter.getId())
-                        .companyName(recruiter.getCompanyName())
-                        .website(recruiter.getWebsite())
-                        .logoUrl(recruiter.getLogoUrl())
-                        .about(recruiter.getAbout())
-                        .build();
+        JobPostingForCandidateResponse.RecruiterCompanyInfo recruiterInfo = JobPostingForCandidateResponse.RecruiterCompanyInfo
+                .builder()
+                .recruiterId(recruiter.getId())
+                .companyName(recruiter.getCompanyName())
+                .website(recruiter.getWebsite())
+                .logoUrl(recruiter.getLogoUrl())
+                .about(recruiter.getAbout())
+                .build();
 
         return JobPostingForCandidateResponse.builder()
                 .id(jobPosting.getId())
