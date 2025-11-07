@@ -130,26 +130,26 @@ public class AdminRecruiterController {
 
     @PutMapping("/{recruiterId}/approve")
     @Operation(summary = "Approve recruiter account",
-               description = "Admin approves recruiter account and changes status from PENDING to ACTIVE (role remains RECRUITER)")
+               description = "Admin approves recruiter account: sets account status to ACTIVE and verification status to APPROVED. Role remains RECRUITER.")
     public ApiResponse<Void> approveRecruiter(@PathVariable int recruiterId) {
         log.info("Admin approving recruiter account with ID: {}", recruiterId);
         registrationService.approveRecruiterAccount(recruiterId);
         return ApiResponse.<Void>builder()
                 .code(200)
-                .message("Recruiter account approved successfully. Account status changed from PENDING to ACTIVE.")
+                .message("Recruiter account approved successfully. Account status: ACTIVE, Verification status: APPROVED.")
                 .build();
     }
 
     @PutMapping("/{recruiterId}/reject")
     @Operation(summary = "Reject recruiter account",
-               description = "Admin rejects and deletes both recruiter profile and account permanently")
+               description = "Admin rejects recruiter account by setting account status to REJECTED and verification status to REJECTED. Data is preserved for audit purposes.")
     public ApiResponse<Void> rejectRecruiter(@PathVariable int recruiterId,
                                              @RequestParam(required = false) String reason) {
         log.info("Admin rejecting recruiter account with ID: {}, Reason: {}", recruiterId, reason);
         registrationService.rejectRecruiterAccount(recruiterId, reason);
         return ApiResponse.<Void>builder()
                 .code(200)
-                .message("Recruiter account rejected and deleted. Reason: " + (reason != null ? reason : "Not specified"))
+                .message("Recruiter account rejected. Status changed to REJECTED. Reason: " + (reason != null ? reason : "Not specified"))
                 .build();
     }
 
