@@ -6,7 +6,12 @@ import com.fpt.careermate.services.coach_services.domain.Roadmap;
 import com.fpt.careermate.services.coach_services.domain.Subtopic;
 import com.fpt.careermate.services.coach_services.domain.Topic;
 import com.fpt.careermate.services.coach_services.repository.RoadmapRepo;
+import com.fpt.careermate.services.coach_services.service.dto.response.ResourceResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.RoadmapResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.SubtopicResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.TopicResponse;
 import com.fpt.careermate.services.coach_services.service.impl.RoadmapService;
+import com.fpt.careermate.services.coach_services.service.mapper.RoadmapMapper;
 import io.weaviate.client.WeaviateClient;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
@@ -36,6 +38,7 @@ public class RoadmapImp implements RoadmapService {
 
     WeaviateClient client;
     RoadmapRepo roadmapRepo;
+    RoadmapMapper roadmapMapper;
 
     // Thêm roadmap vào Postgres
     @Transactional
@@ -101,5 +104,15 @@ public class RoadmapImp implements RoadmapService {
         } catch (IOException e) {
             throw new AppException(ErrorCode.IO_EXCEPTION);
         }
+    }
+
+    // Lấy roadmap detail từ Postgres
+    @Override
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public RoadmapResponse getRoadmap(int roadmapId) {
+        Roadmap roadmap = roadmapRepo.findById(roadmapId)
+                .orElseThrow(() -> new AppException(ErrorCode.ROADMAP_NOT_FOUND));
+
+        return roadmapMapper.toRoadmapResponse(roadmap);
     }
 }

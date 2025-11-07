@@ -6,6 +6,7 @@ import com.fpt.careermate.services.coach_services.service.RoadmapImp;
 import com.fpt.careermate.services.coach_services.service.dto.request.CourseCreationRequest;
 import com.fpt.careermate.services.coach_services.service.dto.response.CoursePageResponse;
 import com.fpt.careermate.services.coach_services.service.dto.response.RecommendedCourseResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.RoadmapResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
@@ -28,7 +29,7 @@ public class RoadmapController {
 
     RoadmapImp roadmapImp;
 
-    @PostMapping("/internal")
+    @PostMapping()
     @Operation(description = """
             Do not use this API
             Need login as ADMIN to access
@@ -44,4 +45,19 @@ public class RoadmapController {
                 .build();
     }
 
+    @GetMapping("/{roadmapId}")
+    @Operation(description = """
+            Get roadmap by id
+            input: roadmapId
+            output: RoadmapResponse have topics and subtopics
+            Need login as CANDIDATE to access this API
+            """)
+    public ApiResponse<RoadmapResponse> getRoadmap(@PathVariable int roadmapId)
+    {
+        return ApiResponse.<RoadmapResponse>builder()
+                .result(roadmapImp.getRoadmap(roadmapId))
+                .code(200)
+                .message("success")
+                .build();
+    }
 }
