@@ -71,6 +71,7 @@ public enum ErrorCode {
     LESSON_NOT_FOUND(7000, "Lesson not found", HttpStatus.NOT_FOUND),
     COURSE_NOT_FOUND(7001, "Course not found", HttpStatus.NOT_FOUND),
     ROADMAP_NOT_FOUND(7002, "Roadmap not found", HttpStatus.NOT_FOUND),
+    TOPIC_NOT_FOUND(7003, "Topic not found", HttpStatus.NOT_FOUND),
 
     BLOG_NOT_FOUND(1010, "Blog not found", HttpStatus.NOT_FOUND),
     BLOG_INVALID_STATUS(1011, "Invalid blog status", HttpStatus.BAD_REQUEST),

@@ -6,10 +6,8 @@ import com.fpt.careermate.services.coach_services.domain.Roadmap;
 import com.fpt.careermate.services.coach_services.domain.Subtopic;
 import com.fpt.careermate.services.coach_services.domain.Topic;
 import com.fpt.careermate.services.coach_services.repository.RoadmapRepo;
-import com.fpt.careermate.services.coach_services.service.dto.response.ResourceResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.RoadmapResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.SubtopicResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.TopicResponse;
+import com.fpt.careermate.services.coach_services.repository.TopicRepo;
+import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import com.fpt.careermate.services.coach_services.service.impl.RoadmapService;
 import com.fpt.careermate.services.coach_services.service.mapper.RoadmapMapper;
 import io.weaviate.client.WeaviateClient;
@@ -38,6 +36,7 @@ public class RoadmapImp implements RoadmapService {
 
     WeaviateClient client;
     RoadmapRepo roadmapRepo;
+    TopicRepo topicRepo;
     RoadmapMapper roadmapMapper;
 
     // Thêm roadmap vào Postgres
@@ -114,5 +113,26 @@ public class RoadmapImp implements RoadmapService {
                 .orElseThrow(() -> new AppException(ErrorCode.ROADMAP_NOT_FOUND));
 
         return roadmapMapper.toRoadmapResponse(roadmap);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public TopicDetailResponse getTopicDetail(int topicId) {
+        // Kiểm tra topic tồn tại
+        Topic topic = topicRepo.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPIC_NOT_FOUND));
+        String[] urls = topic.getResources().split(",");
+        List<ResourceResponse> resourceResponses = new ArrayList<>();
+
+        TopicDetailResponse topicDetailResponse = roadmapMapper.topicDetailResponse(topic);
+
+        // Map urls to ResourceResponse
+        for (String url : urls) {
+            ResourceResponse resourceResponse = new ResourceResponse(url.trim());
+            resourceResponses.add(resourceResponse);
+        }
+
+        topicDetailResponse.setResourceResponses(resourceResponses);
+        return topicDetailResponse;
     }
 }

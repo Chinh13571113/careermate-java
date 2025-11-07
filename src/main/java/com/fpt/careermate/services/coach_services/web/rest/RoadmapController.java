@@ -7,6 +7,7 @@ import com.fpt.careermate.services.coach_services.service.dto.request.CourseCrea
 import com.fpt.careermate.services.coach_services.service.dto.response.CoursePageResponse;
 import com.fpt.careermate.services.coach_services.service.dto.response.RecommendedCourseResponse;
 import com.fpt.careermate.services.coach_services.service.dto.response.RoadmapResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.TopicDetailResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
@@ -56,6 +57,22 @@ public class RoadmapController {
     {
         return ApiResponse.<RoadmapResponse>builder()
                 .result(roadmapImp.getRoadmap(roadmapId))
+                .code(200)
+                .message("success")
+                .build();
+    }
+
+    @GetMapping("/topic/{topicId}")
+    @Operation(description = """
+            Get topic by id
+            input: topicId
+            output: name, description and resources of topic
+            Need login as CANDIDATE to access this API
+            """)
+    public ApiResponse<TopicDetailResponse> getTopicDetailById(@PathVariable int topicId)
+    {
+        return ApiResponse.<TopicDetailResponse>builder()
+                .result(roadmapImp.getTopicDetail(topicId))
                 .code(200)
                 .message("success")
                 .build();
