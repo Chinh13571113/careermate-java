@@ -24,6 +24,9 @@ public class WeaviateConfig {
     @Value("${google.api-key}")
     private String studio_key;
 
+    @Value("${huggingface.api-key}")
+    private String hf_key;
+
     @Bean
     public WeaviateClient weaviateClient() throws AuthException {
         String clusterUrl = "https://oei76mp3ttcpw5prggx3fq.c0.asia-southeast1.gcp.weaviate.cloud";
@@ -31,6 +34,7 @@ public class WeaviateConfig {
         Map<String, String> headers = new HashMap<>();
         headers.put("X-Weaviate-Cluster-URL", clusterUrl);
         headers.put("X-Goog-Studio-Api-Key", studio_key);
+        headers.put("X-HuggingFace-Api-Key", hf_key);
 
         Config config = new Config("https", url, headers);
         WeaviateClient client = WeaviateAuthClient.apiKey(config, apiKey);

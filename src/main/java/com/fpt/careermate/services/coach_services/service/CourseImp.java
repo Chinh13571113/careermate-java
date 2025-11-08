@@ -47,16 +47,16 @@ public class CourseImp implements CoachService {
     // Hàm gợi ý khóa học dựa trên vai trò (role) của người dùng
     public List<RecommendedCourseResponse> recommendCourse(String role) {
         String collectionName = "Course";
-        String[] target_vector = {"description_vector"};
+        String[] target_vector = {"title_vector"};
 
         // Tạo bộ lọc tìm kiếm gần theo văn bản (nearText)
         // "concepts" là mảng các từ khóa hoặc cụm từ dùng để tìm kiếm ngữ nghĩa
         // "certainty" là ngưỡng độ tin cậy tối thiểu của kết quả (0.7f = 70%)
         NearTextArgument nearText = NearTextArgument.builder()
                 // vì SDK được sinh máy móc từ định nghĩa GraphQL, nên nó phản ánh y nguyên kiểu danh sách.
-                .concepts(new String[]{role})
+                .concepts(new String[]{role.toLowerCase().trim()})
                 .certainty(0.71f)
-                .targetVectors(target_vector) // Sử dụng trường vector tùy chỉnh "description_vector"
+                .targetVectors(target_vector) // Sử dụng trường vector tùy chỉnh
                 .build();
 
         // Xác định các trường cần lấy từ đối tượng "Course" trong Weaviate
@@ -84,7 +84,6 @@ public class CourseImp implements CoachService {
         // tự viết câu truy vấn GraphQL dạng chuỗi (query)
         Result<GraphQLResponse> result = client.graphQL().raw().withQuery(query).run();
         GraphQLResponse graphQLResponse = result.getResult();
-        log.info("GraphQL Response: {}", graphQLResponse);
 
         // Trích xuất dữ liệu từ phản hồi GraphQL (ở dạng Map lồng nhau)
         Map<String, Object> data = (Map<String, Object>) graphQLResponse.getData();   // {Get={Course=[{...}]}}
