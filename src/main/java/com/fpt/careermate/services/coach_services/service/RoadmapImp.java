@@ -11,8 +11,10 @@ import com.fpt.careermate.services.coach_services.repository.TopicRepo;
 import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import com.fpt.careermate.services.coach_services.service.impl.RoadmapService;
 import com.fpt.careermate.services.coach_services.service.mapper.RoadmapMapper;
+import com.fpt.careermate.services.job_services.domain.JobPosting;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
+import io.weaviate.client.v1.data.model.WeaviateObject;
 import io.weaviate.client.v1.graphql.model.GraphQLResponse;
 import io.weaviate.client.v1.graphql.query.argument.NearTextArgument;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
@@ -106,6 +108,8 @@ public class RoadmapImp implements RoadmapService {
             roadmap.setTopics(topics);
             // Thêm Roadmap vào Postgres
             roadmapRepo.save(roadmap);
+            // Thêm Roadmap vào Weaviate
+            addRoadmapToWeaviate(nameRoadmap);
         } catch (FileNotFoundException e) {
             throw new AppException(ErrorCode.FILE_NOT_FOUND);
         } catch (IOException e) {
@@ -169,7 +173,7 @@ public class RoadmapImp implements RoadmapService {
     @PreAuthorize("hasRole('CANDIDATE')")
     public List<RecommendedRoadmapResponse> recommendRoadmap(String role) {
         String collectionName = "Roadmap";
-        String[] target_vector = {"title_vector"};
+        String[] target_vector = {"name_vector"};
 
         // Tạo bộ lọc tìm kiếm gần theo văn bản (nearText)
         // "concepts" là mảng các từ khóa hoặc cụm từ dùng để tìm kiếm ngữ nghĩa
@@ -182,10 +186,10 @@ public class RoadmapImp implements RoadmapService {
                 .build();
 
         // Xác định các trường cần lấy từ đối tượng "Roadmap" trong Weaviate
-        // Bao gồm: "title" và "_additional.certainty" (độ tương tự)
+        // Bao gồm: "name" và "_additional.certainty" (độ tương tự)
         Fields fields = Fields.builder()
                 .fields(new Field[]{
-                        Field.builder().name("title").build(),
+                        Field.builder().name("name").build(),
                         Field.builder().name("_additional").fields(new Field[]{
                                 Field.builder().name("certainty").build()
                         }).build()
@@ -214,15 +218,29 @@ public class RoadmapImp implements RoadmapService {
         // Chuyển từng phần tử trong danh sách sang đối tượng phản hồi (DTO)
         List<RecommendedRoadmapResponse> recommendedRoadmapResponseList = new ArrayList<>();
         RoadmapData.forEach(roadmap -> {
-            String title = (String) roadmap.get("title");
+            String name = (String) roadmap.get("name");
             Map<String, Object> additional = (Map<String, Object>) roadmap.get("_additional");
             Double similarityScore = (Double) additional.get("certainty");
 
             // Thêm vào danh sách kết quả trả về
-            recommendedRoadmapResponseList.add(new RecommendedRoadmapResponse(title, similarityScore));
+            recommendedRoadmapResponseList.add(new RecommendedRoadmapResponse(name, similarityScore));
         });
 
         // Trả về danh sách roadmap gợi ý
         return recommendedRoadmapResponseList;
     }
+
+    private void addRoadmapToWeaviate(String name) {
+        String weaviateClassName = "Roadmap";
+
+        // Tạo roadmap map để thêm vào weaviate
+        Map<String,Object> roadmapMap = new HashMap<>();
+        roadmapMap.put("name", name.toLowerCase().trim());
+
+        Result<WeaviateObject> result = client.data().creator()
+                .withClassName(weaviateClassName)
+                .withProperties(roadmapMap)
+                .run();
+    }
+
 }
