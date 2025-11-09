@@ -433,83 +433,27 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
     @Transactional
     public void syncCandidateToWeaviate(int candidateId) {
         try {
-            Candidate candidate = candidateRepo.findById(candidateId)
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            log.info("🔄 Refreshing candidate {} profile in Weaviate", candidateId);
 
             // Get candidate's resume
             Resume resume = resumeRepo.findByCandidate_CandidateId(candidateId)
-                    .orElse(null);
+                    .orElseThrow(() -> {
+                        log.warn("❌ No resume found for candidate ID: {}", candidateId);
+                        return new AppException(ErrorCode.RESUME_NOT_FOUND);
+                    });
 
-            if (resume == null) {
-                log.warn("No resume found for candidate ID: {}", candidateId);
-                return;
-            }
+            log.info("📋 Refreshing candidate {} with comprehensive profile data", candidateId);
 
-            // Extract skills
-            List<String> skills = resume.getSkills().stream()
-                    .map(Skill::getSkillName)
-                    .collect(Collectors.toList());
+            // Use CandidateWeaviateService to store comprehensive profile
+            CandidateWeaviateService candidateWeaviateService = new CandidateWeaviateService(weaviateClient);
+            candidateWeaviateService.storeCandidateProfile(resume);
 
-            log.info("📋 Syncing candidate {} with {} skills: {}",
-                    candidateId, skills.size(), String.join(", ", skills));
+            log.info("✅ Successfully refreshed candidate {} profile in Weaviate", candidateId);
 
-            // Calculate total years of experience from work history
-            int totalExperience = resume.getWorkExperiences().stream()
-                    .mapToInt(we -> {
-                        if (we.getStartDate() != null && we.getEndDate() != null) {
-                            return (int) java.time.temporal.ChronoUnit.YEARS.between(
-                                    we.getStartDate(), we.getEndDate()
-                            );
-                        }
-                        return 0;
-                    })
-                    .sum();
-
-            // Build candidate profile object for Weaviate
-            Map<String, Object> properties = new HashMap<>();
-            properties.put("candidateId", candidateId);
-            properties.put("candidateName", candidate.getFullName());
-            properties.put("email", candidate.getAccount().getEmail());
-            properties.put("skills", skills);
-            properties.put("totalExperience", totalExperience);
-            properties.put("aboutMe", resume.getAboutMe() != null ? resume.getAboutMe() : "");
-            properties.put("syncedAt", new Date().toString());
-
-            String weaviateId = UUID.nameUUIDFromBytes(String.valueOf(candidateId).getBytes()).toString();
-
-            // Delete existing entry if it exists
-            try {
-                Result<Boolean> deleteResult = weaviateClient.data().deleter()
-                        .withClassName(CANDIDATE_CLASS)
-                        .withID(weaviateId)
-                        .run();
-
-                if (deleteResult.hasErrors()) {
-                    log.debug("No existing entry to delete for candidate {}", candidateId);
-                } else {
-                    log.info("🗑️ Deleted existing Weaviate entry for candidate {}", candidateId);
-                }
-            } catch (Exception e) {
-                log.debug("No existing entry for candidate {}: {}", candidateId, e.getMessage());
-            }
-
-            // Create fresh entry in Weaviate
-            Result<WeaviateObject> result = weaviateClient.data().creator()
-                    .withClassName(CANDIDATE_CLASS)
-                    .withID(weaviateId)
-                    .withProperties(properties)
-                    .run();
-
-            if (result.hasErrors()) {
-                log.error("Failed to sync candidate {} to Weaviate: {}",
-                        candidateId, result.getError().getMessages());
-            } else {
-                log.info("✅ Synced candidate {} to Weaviate successfully with {} skills",
-                        candidateId, skills.size());
-            }
-
+        } catch (AppException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Error syncing candidate {} to Weaviate: {}", candidateId, e.getMessage(), e);
+            log.error("❌ Error refreshing candidate {} in Weaviate: {}", candidateId, e.getMessage(), e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
@@ -518,29 +462,48 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
     @Transactional
     public void syncAllCandidatesToWeaviate() {
         try {
-            // Ensure schema exists
+            log.info("🔄 Starting comprehensive refresh of all candidate profiles in Weaviate...");
+
+            // Ensure schema exists with proper structure
             ensureWeaviateSchema();
 
-            List<Candidate> candidates = candidateRepo.findAll();
-            log.info("Starting sync of {} candidates to Weaviate...", candidates.size());
+            // Get all resumes (not candidates) since resume is required
+            List<Resume> resumes = resumeRepo.findAll();
+            log.info("📊 Found {} candidate profiles with resumes", resumes.size());
+
+            CandidateWeaviateService candidateWeaviateService = new CandidateWeaviateService(weaviateClient);
 
             int successCount = 0;
             int failCount = 0;
+            int skippedCount = 0;
 
-            for (Candidate candidate : candidates) {
+            for (Resume resume : resumes) {
                 try {
-                    syncCandidateToWeaviate(candidate.getCandidateId());
+                    if (resume.getCandidate() == null) {
+                        log.warn("⚠️ Resume without candidate found, skipping");
+                        skippedCount++;
+                        continue;
+                    }
+
+                    log.info("📝 Refreshing candidate {} profile...",
+                        resume.getCandidate().getCandidateId());
+
+                    candidateWeaviateService.storeCandidateProfile(resume);
                     successCount++;
+
                 } catch (Exception e) {
-                    log.error("Failed to sync candidate {}: {}", candidate.getCandidateId(), e.getMessage());
+                    log.error("❌ Failed to refresh candidate {}: {}",
+                        resume.getCandidate() != null ? resume.getCandidate().getCandidateId() : "unknown",
+                        e.getMessage());
                     failCount++;
                 }
             }
 
-            log.info("✅ Sync completed: {} succeeded, {} failed", successCount, failCount);
+            log.info("✅ Profile refresh completed: {} succeeded, {} failed, {} skipped",
+                successCount, failCount, skippedCount);
 
         } catch (Exception e) {
-            log.error("Error during batch sync: {}", e.getMessage(), e);
+            log.error("❌ Error during batch profile refresh: {}", e.getMessage(), e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
@@ -579,82 +542,134 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
                 log.info("Creating Weaviate schema for {}", CANDIDATE_CLASS);
 
                 // Configure Weaviate Embeddings Inference API
-                // This uses Weaviate's built-in embedding service
                 Map<String, Object> moduleConfig = new HashMap<>();
                 Map<String, Object> text2vecWeaviate = new HashMap<>();
                 text2vecWeaviate.put("vectorizeClassName", false);
-                // DON'T specify model - let Weaviate Cloud use its default model
-                // The model naming in Weaviate Cloud API is inconsistent/undocumented
-                // Default model is sufficient for semantic matching
                 moduleConfig.put("text2vec-weaviate", text2vecWeaviate);
 
-                // Configure property-level vectorization settings
-                Map<String, Object> skillsModuleConfig = new HashMap<>();
-                Map<String, Object> skillsText2vec = new HashMap<>();
-                skillsText2vec.put("skip", false);
-                skillsText2vec.put("vectorizePropertyName", false);
-                skillsModuleConfig.put("text2vec-weaviate", skillsText2vec);
+                // Vectorized properties (for semantic search)
+                Map<String, Object> vectorizedConfig = new HashMap<>();
+                Map<String, Object> vectorizedText2vec = new HashMap<>();
+                vectorizedText2vec.put("skip", false);
+                vectorizedText2vec.put("vectorizePropertyName", false);
+                vectorizedConfig.put("text2vec-weaviate", vectorizedText2vec);
 
-                Map<String, Object> aboutMeModuleConfig = new HashMap<>();
-                Map<String, Object> aboutMeText2vec = new HashMap<>();
-                aboutMeText2vec.put("skip", false);
-                aboutMeText2vec.put("vectorizePropertyName", false);
-                aboutMeModuleConfig.put("text2vec-weaviate", aboutMeText2vec);
-
-                Map<String, Object> skipModuleConfig = new HashMap<>();
+                // Non-vectorized properties (metadata)
+                Map<String, Object> skipConfig = new HashMap<>();
                 Map<String, Object> skipText2vec = new HashMap<>();
                 skipText2vec.put("skip", true);
                 skipText2vec.put("vectorizePropertyName", false);
-                skipModuleConfig.put("text2vec-weaviate", skipText2vec);
+                skipConfig.put("text2vec-weaviate", skipText2vec);
 
                 io.weaviate.client.v1.schema.model.WeaviateClass weaviateClass =
                         io.weaviate.client.v1.schema.model.WeaviateClass.builder()
                         .className(CANDIDATE_CLASS)
-                        .description("Candidate profiles with skills and experience for semantic matching")
-                        .vectorizer("text2vec-weaviate") // Use Weaviate's embedding inference API
+                        .description("Comprehensive candidate profiles with qualifications for AI-powered matching")
+                        .vectorizer("text2vec-weaviate")
                         .moduleConfig(moduleConfig)
                         .properties(Arrays.asList(
+                                // Basic Info (non-vectorized)
                                 io.weaviate.client.v1.schema.model.Property.builder()
                                         .name("candidateId")
                                         .dataType(Arrays.asList("int"))
                                         .description("Unique candidate identifier")
-                                        .moduleConfig(skipModuleConfig)
+                                        .moduleConfig(skipConfig)
                                         .build(),
                                 io.weaviate.client.v1.schema.model.Property.builder()
                                         .name("candidateName")
                                         .dataType(Arrays.asList("text"))
                                         .description("Candidate full name")
-                                        .moduleConfig(skipModuleConfig)
+                                        .moduleConfig(skipConfig)
                                         .build(),
                                 io.weaviate.client.v1.schema.model.Property.builder()
                                         .name("email")
                                         .dataType(Arrays.asList("text"))
                                         .description("Candidate email address")
-                                        .moduleConfig(skipModuleConfig)
+                                        .moduleConfig(skipConfig)
                                         .build(),
+
+                                // Skills (40% weight - vectorized)
                                 io.weaviate.client.v1.schema.model.Property.builder()
                                         .name("skills")
                                         .dataType(Arrays.asList("text[]"))
-                                        .description("List of candidate skills - vectorized for semantic search")
-                                        .moduleConfig(skillsModuleConfig)
+                                        .description("Technical and soft skills - vectorized for semantic matching")
+                                        .moduleConfig(vectorizedConfig)
+                                        .build(),
+
+                                // Work Experience (25% weight - vectorized)
+                                io.weaviate.client.v1.schema.model.Property.builder()
+                                        .name("workExperienceSummary")
+                                        .dataType(Arrays.asList("text"))
+                                        .description("Comprehensive work experience summary - vectorized")
+                                        .moduleConfig(vectorizedConfig)
                                         .build(),
                                 io.weaviate.client.v1.schema.model.Property.builder()
                                         .name("totalExperience")
                                         .dataType(Arrays.asList("int"))
-                                        .description("Total years of experience")
-                                        .moduleConfig(skipModuleConfig)
+                                        .description("Total years of professional experience")
+                                        .moduleConfig(skipConfig)
                                         .build(),
+
+                                // Education (15% weight - vectorized)
+                                io.weaviate.client.v1.schema.model.Property.builder()
+                                        .name("educationSummary")
+                                        .dataType(Arrays.asList("text"))
+                                        .description("Education background summary - vectorized")
+                                        .moduleConfig(vectorizedConfig)
+                                        .build(),
+
+                                // Certificates (10% weight - vectorized)
+                                io.weaviate.client.v1.schema.model.Property.builder()
+                                        .name("certificates")
+                                        .dataType(Arrays.asList("text[]"))
+                                        .description("Professional certifications - vectorized")
+                                        .moduleConfig(vectorizedConfig)
+                                        .build(),
+
+                                // Projects (5% weight - vectorized)
+                                io.weaviate.client.v1.schema.model.Property.builder()
+                                        .name("projects")
+                                        .dataType(Arrays.asList("text[]"))
+                                        .description("Highlight projects with descriptions - vectorized")
+                                        .moduleConfig(vectorizedConfig)
+                                        .build(),
+
+                                // Awards (3% weight - vectorized)
+                                io.weaviate.client.v1.schema.model.Property.builder()
+                                        .name("awards")
+                                        .dataType(Arrays.asList("text[]"))
+                                        .description("Professional awards and recognition - vectorized")
+                                        .moduleConfig(vectorizedConfig)
+                                        .build(),
+
+                                // Languages (2% weight - vectorized)
+                                io.weaviate.client.v1.schema.model.Property.builder()
+                                        .name("languages")
+                                        .dataType(Arrays.asList("text[]"))
+                                        .description("Foreign language proficiency - vectorized")
+                                        .moduleConfig(vectorizedConfig)
+                                        .build(),
+
+                                // Profile Summary (combined for semantic search)
                                 io.weaviate.client.v1.schema.model.Property.builder()
                                         .name("aboutMe")
                                         .dataType(Arrays.asList("text"))
-                                        .description("Candidate profile summary - vectorized for semantic search")
-                                        .moduleConfig(aboutMeModuleConfig)
+                                        .description("Personal profile summary - vectorized")
+                                        .moduleConfig(vectorizedConfig)
                                         .build(),
                                 io.weaviate.client.v1.schema.model.Property.builder()
-                                        .name("syncedAt")
+                                        .name("profileSummary")
                                         .dataType(Arrays.asList("text"))
-                                        .description("Last sync timestamp")
-                                        .moduleConfig(skipModuleConfig)
+                                        .description("Comprehensive profile summary combining all qualifications - vectorized")
+                                        .moduleConfig(vectorizedConfig)
+                                        .build(),
+
+                                // Metadata
+                                io.weaviate.client.v1.schema.model.Property.builder()
+                                        .name("lastUpdated")
+                                        .dataType(Arrays.asList("text"))
+                                        .description("Last update timestamp")
+                                        .moduleConfig(skipConfig)
                                         .build()
                         ))
                         .build();
@@ -664,13 +679,13 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
                         .run();
 
                 if (createResult.hasErrors()) {
-                    log.error("Failed to create schema: {}", createResult.getError().getMessages());
+                    log.error("❌ Failed to create schema: {}", createResult.getError().getMessages());
                 } else {
-                    log.info("✅ Schema created successfully");
+                    log.info("✅ Comprehensive candidate schema created successfully");
                 }
             }
         } catch (Exception e) {
-            log.error("Error ensuring Weaviate schema: {}", e.getMessage(), e);
+            log.error("❌ Error ensuring Weaviate schema: {}", e.getMessage(), e);
         }
     }
 

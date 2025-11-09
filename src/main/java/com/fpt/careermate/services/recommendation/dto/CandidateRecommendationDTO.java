@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -21,5 +22,15 @@ public class CandidateRecommendationDTO {
     List<String> missingSkills;
     int totalYearsExperience;
     String profileSummary;
+
+    // Additional qualification details
+    String educationLevel;
+    int certificatesCount;
+    int projectsCount;
+    int awardsCount;
+    int languagesCount;
+
+    // Score breakdown for explainability
+    Map<String, Double> scoreBreakdown;
 }
 

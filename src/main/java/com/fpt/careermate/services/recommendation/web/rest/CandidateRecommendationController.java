@@ -3,7 +3,6 @@ package com.fpt.careermate.services.recommendation.web.rest;
 import com.fpt.careermate.common.response.ApiResponse;
 import com.fpt.careermate.services.recommendation.dto.RecommendationResponseDTO;
 import com.fpt.careermate.services.recommendation.service.CandidateRecommendationService;
-import com.fpt.careermate.services.recommendation.service.CandidateRecommendationServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -51,41 +50,43 @@ public class CandidateRecommendationController {
                 .build();
     }
 
-    @PostMapping("/admin/recommendations/sync-candidate/{candidateId}")
+    @PostMapping({"/admin/recommendations/refresh-candidate/{candidateId}", "/admin/recommendations/sync-candidate/{candidateId}"})
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerToken")
     @Operation(
-            summary = "Sync single candidate to Weaviate",
-            description = "Syncs a candidate's profile data to the Weaviate vector database for recommendations"
+            summary = "Refresh candidate profile in Weaviate",
+            description = "Updates a candidate's comprehensive profile data in Weaviate vector database for AI-powered recommendations. " +
+                    "Includes skills, experience, education, certificates, projects, awards, and languages."
     )
-    public ApiResponse<String> syncCandidateToWeaviate(
+    public ApiResponse<String> refreshCandidateProfile(
             @Parameter(description = "Candidate ID") @PathVariable int candidateId
     ) {
-        log.info("🔄 Admin syncing candidate {} to Weaviate", candidateId);
+        log.info("🔄 Admin refreshing candidate {} profile in Weaviate", candidateId);
         try {
             recommendationService.syncCandidateToWeaviate(candidateId);
-            log.info("✅ Successfully synced candidate {} to Weaviate", candidateId);
+            log.info("✅ Successfully refreshed candidate {} profile", candidateId);
             return ApiResponse.<String>builder()
-                    .result("Candidate synced successfully to recommendation system")
+                    .result("Candidate profile refreshed successfully in recommendation system")
                     .build();
         } catch (Exception e) {
-            log.error("❌ Failed to sync candidate {}: {}", candidateId, e.getMessage(), e);
+            log.error("❌ Failed to refresh candidate {}: {}", candidateId, e.getMessage(), e);
             throw e;
         }
     }
 
-    @PostMapping("/admin/recommendations/sync-all-candidates")
+    @PostMapping({"/admin/recommendations/refresh-all-candidates", "/admin/recommendations/sync-all-candidates"})
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerToken")
     @Operation(
-            summary = "Sync all candidates to Weaviate",
-            description = "Batch syncs all candidate profiles to Weaviate for the recommendation system"
+            summary = "Refresh all candidate profiles in Weaviate",
+            description = "Batch refreshes all candidate profiles with comprehensive data (skills, experience, education, etc.) " +
+                    "in Weaviate for the AI recommendation system. Use this after schema recreation or for bulk updates."
     )
-    public ApiResponse<String> syncAllCandidatesToWeaviate() {
-        log.info("Admin syncing all candidates to Weaviate");
+    public ApiResponse<String> refreshAllCandidateProfiles() {
+        log.info("🔄 Admin refreshing all candidate profiles in Weaviate");
         recommendationService.syncAllCandidatesToWeaviate();
         return ApiResponse.<String>builder()
-                .result("All candidates sync started")
+                .result("All candidate profiles refresh started")
                 .build();
     }
 
@@ -118,16 +119,21 @@ public class CandidateRecommendationController {
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerToken")
     @Operation(
-            summary = "Recreate Weaviate schema with proper vectorization",
-            description = "Deletes and recreates the schema with text2vec-weaviate embeddings. After calling this, you MUST re-sync all candidates."
+            summary = "Recreate Weaviate schema with comprehensive candidate profile structure",
+            description = "Deletes and recreates the schema with all candidate qualification fields: " +
+                    "skills (40%), work experience (25%), education (15%), certificates (10%), " +
+                    "projects (5%), awards (3%), languages (2%). " +
+                    "Uses text2vec-weaviate embeddings for semantic search. " +
+                    "⚠️ After calling this, you MUST refresh all candidate profiles."
     )
     public ApiResponse<String> recreateSchema() {
-        log.info("🔄 Admin recreating Weaviate schema with proper vectorization...");
+        log.info("🔄 Admin recreating Weaviate schema with comprehensive profile structure...");
         try {
             recommendationService.recreateSchema();
             log.info("✅ Schema recreated successfully");
             return ApiResponse.<String>builder()
-                    .result("Schema recreated successfully. Please re-sync all candidates now.")
+                    .result("Schema recreated successfully with comprehensive profile structure. " +
+                            "Please refresh all candidate profiles now using /admin/recommendations/refresh-all-candidates")
                     .build();
         } catch (Exception e) {
             log.error("❌ Failed to recreate schema: {}", e.getMessage(), e);
