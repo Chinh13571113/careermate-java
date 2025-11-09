@@ -4,10 +4,7 @@ import com.fpt.careermate.common.response.ApiResponse;
 import com.fpt.careermate.services.coach_services.service.CourseImp;
 import com.fpt.careermate.services.coach_services.service.RoadmapImp;
 import com.fpt.careermate.services.coach_services.service.dto.request.CourseCreationRequest;
-import com.fpt.careermate.services.coach_services.service.dto.response.CoursePageResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.RecommendedCourseResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.RoadmapResponse;
-import com.fpt.careermate.services.coach_services.service.dto.response.TopicDetailResponse;
+import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
@@ -89,6 +86,22 @@ public class RoadmapController {
     {
         return ApiResponse.<TopicDetailResponse>builder()
                 .result(roadmapImp.getSubtopicDetail(subtopicId))
+                .code(200)
+                .message("success")
+                .build();
+    }
+
+    @GetMapping("/recommendation")
+    @Operation(description = """
+            Recommend roadmap based on candidate's career goal
+            input: role
+            output: list of recommended roadmaps
+            Need login as CANDIDATE to access this API
+            """)
+    public ApiResponse<List<RecommendedRoadmapResponse>> recommendRoadmap(@RequestParam String role)
+    {
+        return ApiResponse.<List<RecommendedRoadmapResponse>>builder()
+                .result(roadmapImp.recommendRoadmap(role))
                 .code(200)
                 .message("success")
                 .build();

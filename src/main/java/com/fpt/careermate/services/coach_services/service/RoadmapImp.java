@@ -12,6 +12,12 @@ import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import com.fpt.careermate.services.coach_services.service.impl.RoadmapService;
 import com.fpt.careermate.services.coach_services.service.mapper.RoadmapMapper;
 import io.weaviate.client.WeaviateClient;
+import io.weaviate.client.base.Result;
+import io.weaviate.client.v1.graphql.model.GraphQLResponse;
+import io.weaviate.client.v1.graphql.query.argument.NearTextArgument;
+import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
+import io.weaviate.client.v1.graphql.query.fields.Field;
+import io.weaviate.client.v1.graphql.query.fields.Fields;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -157,5 +163,66 @@ public class RoadmapImp implements RoadmapService {
 
         topicDetailResponse.setResourceResponses(resourceResponses);
         return topicDetailResponse;
+    }
+
+    @Override
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public List<RecommendedRoadmapResponse> recommendRoadmap(String role) {
+        String collectionName = "Roadmap";
+        String[] target_vector = {"title_vector"};
+
+        // Tạo bộ lọc tìm kiếm gần theo văn bản (nearText)
+        // "concepts" là mảng các từ khóa hoặc cụm từ dùng để tìm kiếm ngữ nghĩa
+        // "certainty" là ngưỡng độ tin cậy tối thiểu của kết quả (0.7f = 70%)
+        NearTextArgument nearText = NearTextArgument.builder()
+                // vì SDK được sinh máy móc từ định nghĩa GraphQL, nên nó phản ánh y nguyên kiểu danh sách.
+                .concepts(new String[]{role.toLowerCase().trim()})
+                .certainty(0.71f)
+                .targetVectors(target_vector) // Sử dụng trường vector tùy chỉnh
+                .build();
+
+        // Xác định các trường cần lấy từ đối tượng "Roadmap" trong Weaviate
+        // Bao gồm: "title" và "_additional.certainty" (độ tương tự)
+        Fields fields = Fields.builder()
+                .fields(new Field[]{
+                        Field.builder().name("title").build(),
+                        Field.builder().name("_additional").fields(new Field[]{
+                                Field.builder().name("certainty").build()
+                        }).build()
+                })
+                .build();
+
+        // Tạo câu truy vấn GraphQL để lấy danh sách 3 roadmap liên quan nhất
+        String query = GetBuilder.builder()
+                .className(collectionName)
+                .fields(fields)                 // các trường cần lấy
+                .withNearTextFilter(nearText)   // áp dụng bộ lọc nearText
+                .limit(3)
+                .build()
+                .buildQuery();
+
+        // Gửi truy vấn GraphQL đến Weaviate và nhận kết quả trả về
+        // tự viết câu truy vấn GraphQL dạng chuỗi (query)
+        Result<GraphQLResponse> result = client.graphQL().raw().withQuery(query).run();
+        GraphQLResponse graphQLResponse = result.getResult();
+
+        // Trích xuất dữ liệu từ phản hồi GraphQL (ở dạng Map lồng nhau)
+        Map<String, Object> data = (Map<String, Object>) graphQLResponse.getData();   // {Get={Roadmap=[{...}]}}
+        Map<String, Object> get = (Map<String, Object>) data.get("Get");              // {Roadmap=[{...}]}
+        List<Map<String, Object>> RoadmapData = (List<Map<String, Object>>) get.get(collectionName);
+
+        // Chuyển từng phần tử trong danh sách sang đối tượng phản hồi (DTO)
+        List<RecommendedRoadmapResponse> recommendedRoadmapResponseList = new ArrayList<>();
+        RoadmapData.forEach(roadmap -> {
+            String title = (String) roadmap.get("title");
+            Map<String, Object> additional = (Map<String, Object>) roadmap.get("_additional");
+            Double similarityScore = (Double) additional.get("certainty");
+
+            // Thêm vào danh sách kết quả trả về
+            recommendedRoadmapResponseList.add(new RecommendedRoadmapResponse(title, similarityScore));
+        });
+
+        // Trả về danh sách roadmap gợi ý
+        return recommendedRoadmapResponseList;
     }
 }
