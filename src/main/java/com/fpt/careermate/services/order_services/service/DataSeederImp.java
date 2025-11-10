@@ -1,7 +1,7 @@
 package com.fpt.careermate.services.order_services.service;
 
+import com.fpt.careermate.services.order_services.domain.CandidatePackage;
 import com.fpt.careermate.services.order_services.domain.Entitlement;
-import com.fpt.careermate.services.order_services.domain.Package;
 import com.fpt.careermate.services.order_services.domain.EntitlementPackage;
 import com.fpt.careermate.services.order_services.repository.EntitlementPackageRepo;
 import com.fpt.careermate.services.order_services.repository.EntitlementRepo;
@@ -109,21 +109,21 @@ public class DataSeederImp implements CommandLineRunner {
         if (packageRepo.count() == 0) {
             log.info("🌱 Seeding Packages...");
 
-            var free = new Package();
+            var free = new CandidatePackage();
             free.setName("Free");
             free.setPrice(0L);
             free.setDurationDays(0);
             free.setPriority(3);
             free.setCreatedAt(LocalDateTime.now());
 
-            var plus = new Package();
+            var plus = new CandidatePackage();
             plus.setName("Plus");
             plus.setPrice(99000L);
             plus.setDurationDays(30);
             plus.setPriority(2);
             plus.setCreatedAt(LocalDateTime.now());
 
-            var premium = new Package();
+            var premium = new CandidatePackage();
             premium.setName("Premium");
             premium.setPrice(199000L);
             premium.setDurationDays(30);
@@ -135,7 +135,7 @@ public class DataSeederImp implements CommandLineRunner {
     }
 
     /**
-     * 🔗 Seed bảng mapping giữa Entitlement và Package
+     * 🔗 Seed bảng mapping giữa Entitlement và CandidatePackage
      * - Gắn các quyền và giới hạn cho từng gói
      * - Ví dụ:
      *   + Free chỉ tạo 1 CV, apply 5 lần/tháng
@@ -145,7 +145,7 @@ public class DataSeederImp implements CommandLineRunner {
     private void seedEntitlementPackages() {
         LocalDateTime now = LocalDateTime.now();
         if (entitlementpackageRepo.count() == 0) {
-            log.info("🌱 Seeding Entitlement-Package Mappings...");
+            log.info("🌱 Seeding Entitlement-CandidatePackage Mappings...");
 
             var free = packageRepo.findByName("Free");
             var plus = packageRepo.findByName("Plus");
@@ -159,7 +159,7 @@ public class DataSeederImp implements CommandLineRunner {
             var cvDownload = entitlementRepo.findByCode("CV_DOWNLOAD");
             var jobRecommendation = entitlementRepo.findByCode("JOB_RECOMMENDATION");
 
-            // === Free Package ===
+            // === Free CandidatePackage ===
             entitlementpackageRepo.saveAll(List.of(
                     new EntitlementPackage(true, 1, now, cvBuilder, free),
                     new EntitlementPackage(true, 5, now, applyJob, free),
@@ -170,7 +170,7 @@ public class DataSeederImp implements CommandLineRunner {
                     new EntitlementPackage(false, 0, now, jobRecommendation, free)
                     ));
 
-            // === Plus Package ===
+            // === Plus CandidatePackage ===
             entitlementpackageRepo.saveAll(List.of(
                     new EntitlementPackage(true, 3, now, cvBuilder, plus),
                     new EntitlementPackage(true, 20, now, applyJob, plus),
@@ -181,7 +181,7 @@ public class DataSeederImp implements CommandLineRunner {
                     new EntitlementPackage(true, 0, now, jobRecommendation, plus)
                     ));
 
-            // === Premium Package ===
+            // === Premium CandidatePackage ===
             entitlementpackageRepo.saveAll(List.of(
                     new EntitlementPackage(true, 0, now, cvBuilder, premium),
                     new EntitlementPackage(true, 0, now, applyJob, premium),

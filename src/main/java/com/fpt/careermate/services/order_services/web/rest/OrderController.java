@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Validated
-@Tag(name = "Order", description = "Manage order")
+@Tag(name = "CandidateOrder", description = "Manage candidateOrder")
 @RestController
 @RequestMapping("/api/order")
 @RequiredArgsConstructor
@@ -27,21 +27,7 @@ public class OrderController {
 
     OrderImp orderImp;
 
-    @Operation(summary = "Create order")
-    @PostMapping
-    public ApiResponse<String> createOrder(
-            @RequestParam
-            @Min(value = 1, message = "packageId must be greater than or equal to 1")
-            Integer packageId
-    ) {
-        return ApiResponse.<String>builder()
-                .result(orderImp.createOrder(packageId))
-                .code(200)
-                .message("success")
-                .build();
-    }
-
-    @Operation(summary = "Delete order by ID")
+    @Operation(summary = "Delete candidateOrder by ID")
     @DeleteMapping("/{id}")
     public ApiResponse<String> deleteOrder(@Positive @PathVariable int id) {
         orderImp.deleteOrder(id);
@@ -52,7 +38,7 @@ public class OrderController {
                 .build();
     }
 
-    @Operation(summary = "Check order status")
+    @Operation(summary = "Check candidateOrder status")
     @GetMapping("/status/{id}")
     public ApiResponse<String> checkOrderStatus(@Positive @PathVariable int id) {
         return ApiResponse.<String>builder()
@@ -62,7 +48,7 @@ public class OrderController {
                 .build();
     }
 
-    @Operation(summary = "Get order list for admin")
+    @Operation(summary = "Get candidateOrder list for admin")
     @GetMapping
     public ApiResponse<List<OrderResponse>> getOrderList() {
         return ApiResponse.<List<OrderResponse>>builder()
@@ -72,7 +58,7 @@ public class OrderController {
                 .build();
     }
 
-    @Operation(summary = "Get order list for candidate")
+    @Operation(summary = "Get candidateOrder list for candidate")
     @GetMapping("/my-order")
     public ApiResponse<List<OrderResponse>> myOrderList() {
         return ApiResponse.<List<OrderResponse>>builder()

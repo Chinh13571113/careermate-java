@@ -1,6 +1,5 @@
 package com.fpt.careermate.services.order_services.domain;
 
-import com.fpt.careermate.services.profile_services.domain.Candidate;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -15,7 +14,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Entity(name = "package")
-public class Package {
+public class CandidatePackage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
@@ -34,5 +33,5 @@ public class Package {
     int priority;
 
     @OneToOne(mappedBy = "candidatePackage")
-    Order candidateOrder;
+    CandidateOrder candidateOrder;
 }

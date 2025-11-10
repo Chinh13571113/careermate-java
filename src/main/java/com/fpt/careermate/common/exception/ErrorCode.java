@@ -22,12 +22,14 @@ public enum ErrorCode {
     INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
     DUPLICATE_EMAIL(1009, "Your is email existed", HttpStatus.BAD_REQUEST),
 
-        // 20xx: Order
-        ORDER_NOT_FOUND(2000, "Order not found", HttpStatus.NOT_FOUND),
-        CANNOT_DELETE_ORDER(2001, "Cannot delete Order if status is not PENDING", HttpStatus.FORBIDDEN),
+        // 20xx: CandidateOrder
+        ORDER_NOT_FOUND(2000, "CandidateOrder not found", HttpStatus.NOT_FOUND),
+        CANNOT_DELETE_ORDER(2001, "Cannot delete CandidateOrder if status is not PENDING", HttpStatus.FORBIDDEN),
+    PAYMENT_FAILED(2002, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED),
+    CAN_NOT_PAY_FOR_FREE_PACKAGE(2003, "Cannot create payment URL for FREE package", HttpStatus.BAD_REQUEST),
 
-        // 30xx: Package
-        PACKAGE_NOT_FOUND(3000, "Package not found", HttpStatus.NOT_FOUND),
+        // 30xx: CandidatePackage
+        PACKAGE_NOT_FOUND(3000, "CandidatePackage not found", HttpStatus.NOT_FOUND),
 
         // 40xx: Recruiter
         INVALID_WEBSITE(4000, "Website is not reachable", HttpStatus.BAD_REQUEST),

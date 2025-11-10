@@ -4,8 +4,8 @@ import com.fpt.careermate.common.constant.StatusOrder;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.authentication_services.service.AuthenticationImp;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
-import com.fpt.careermate.services.order_services.domain.Order;
-import com.fpt.careermate.services.order_services.domain.Package;
+import com.fpt.careermate.services.order_services.domain.CandidateOrder;
+import com.fpt.careermate.services.order_services.domain.CandidatePackage;
 import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
 import com.fpt.careermate.services.order_services.repository.OrderRepo;
 import com.fpt.careermate.services.order_services.repository.PackageRepo;
@@ -40,51 +40,45 @@ public class OrderImp implements OrderService {
     AuthenticationImp authenticationImp;
     PaymentUtil paymentUtil;
 
-    @PreAuthorize("hasRole('CANDIDATE')")
-    @Override
     @Transactional
-    public String createOrder(int packageId) {
-        Candidate currentCandidate = getCurrentCandidate();
+    public void createOrder(String packageName, Candidate currentCandidate) {
+        CandidatePackage pkg = packageRepo.findByName(packageName);
 
-        Package pkg = packageRepo.findById(packageId)
-                .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
+        CandidateOrder candidateOrder = new CandidateOrder();
+        candidateOrder.setCandidate(currentCandidate);
+        candidateOrder.setCandidatePackage(pkg);
+        candidateOrder.setAmount(pkg.getPrice());
+        candidateOrder.setStatus(StatusOrder.PAID);
+        candidateOrder.setCreateAt(LocalDate.now());
+        candidateOrder.setActive(true);
+        candidateOrder.setStartDate(LocalDate.now());
+        candidateOrder.setEndDate(LocalDate.now().plusDays(pkg.getDurationDays()));
 
-        Order order = new Order();
-        order.setOrderCode(paymentUtil.generateOrderCodeUuid());
-        order.setCandidate(currentCandidate);
-        order.setCandidatePackage(pkg);
-        order.setAmount(pkg.getPrice());
-        order.setPackageNameSnapshot(pkg.getName());
-        order.setPackagePriceSnapshot(pkg.getPrice());
-        order.setStatus(StatusOrder.PENDING);
-        order.setCreateAt(LocalDate.now());
-        Order savedOrder = orderRepo.save(order);
-
-        return savedOrder.getOrderCode();
+        orderRepo.save(candidateOrder);
     }
 
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
     public void deleteOrder(int id) {
-        Order order = orderRepo.findById(id)
+        CandidateOrder candidateOrder = orderRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        if (!order.getStatus().equals(StatusOrder.PENDING)) {
+        if (!candidateOrder.getStatus().equals(StatusOrder.PENDING)) {
             throw new AppException(ErrorCode.CANNOT_DELETE_ORDER);
         }
 
-        order.setStatus(StatusOrder.CANCELLED);
-        order.setCancelledAt(LocalDate.now());
-        orderRepo.save(order);
+        candidateOrder.setStatus(StatusOrder.CANCELLED);
+        candidateOrder.setCancelledAt(LocalDate.now());
+        orderRepo.save(candidateOrder);
     }
 
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
     public String checkOrderStatus(int id) {
-        Order order = orderRepo.findById(id)
+        CandidateOrder candidateOrder = orderRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        return order.getStatus();
+        return candidateOrder.getStatus();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -98,8 +92,8 @@ public class OrderImp implements OrderService {
     public List<OrderResponse> myOrderList() {
         Candidate currentCandidate = getCurrentCandidate();
 
-        List<Order> orders = orderRepo.findByCandidate_CandidateId(currentCandidate.getCandidateId());
-        return orderMapper.toOrderResponseList(orders);
+        List<CandidateOrder> candidateOrders = orderRepo.findByCandidate_CandidateId(currentCandidate.getCandidateId());
+        return orderMapper.toOrderResponseList(candidateOrders);
     }
     
     private Candidate getCurrentCandidate(){
@@ -107,5 +101,23 @@ public class OrderImp implements OrderService {
         Optional<Candidate> candidate = candidateRepo.findByAccount_Id(Integer.valueOf(currentAccount.getId()));
         Candidate currentCandidate = candidate.get();
         return currentCandidate;
+    }
+
+    public void updateCandidateOrder(CandidateOrder exstingCandidateOrder, String packageName){
+        CandidatePackage pkg = packageRepo.findByName(packageName);
+
+        exstingCandidateOrder.setCandidatePackage(pkg);
+        exstingCandidateOrder.setAmount(pkg.getPrice());
+        exstingCandidateOrder.setStatus(StatusOrder.PAID);
+        exstingCandidateOrder.setCreateAt(LocalDate.now());
+        exstingCandidateOrder.setActive(true);
+        exstingCandidateOrder.setStartDate(LocalDate.now());
+        exstingCandidateOrder.setEndDate(LocalDate.now().plusDays(pkg.getDurationDays()));
+
+        orderRepo.save(exstingCandidateOrder);
+    }
+
+    public CandidatePackage getPackageByName(String packageName){
+        return packageRepo.findByName(packageName);
     }
 }

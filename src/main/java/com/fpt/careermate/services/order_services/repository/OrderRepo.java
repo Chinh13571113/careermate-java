@@ -1,6 +1,6 @@
 package com.fpt.careermate.services.order_services.repository;
 
-import com.fpt.careermate.services.order_services.domain.Order;
+import com.fpt.careermate.services.order_services.domain.CandidateOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,7 +9,6 @@ import java.util.Optional;
 
 
 @Repository
-public interface OrderRepo extends JpaRepository<Order,Integer> {
-    Optional<Order> findByOrderCode(String orderCode);
-    List<Order> findByCandidate_CandidateId(int candidateId);
+public interface OrderRepo extends JpaRepository<CandidateOrder,Integer> {
+    List<CandidateOrder> findByCandidate_CandidateId(int candidateId);
 }

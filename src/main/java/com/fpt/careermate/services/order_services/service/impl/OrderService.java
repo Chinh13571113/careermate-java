@@ -6,7 +6,6 @@ import com.fpt.careermate.services.order_services.service.dto.response.OrderResp
 import java.util.List;
 
 public interface OrderService {
-    String createOrder(int packageId);
     void deleteOrder(int id);
     String checkOrderStatus(int id);
     List<OrderResponse> getOrderList();
