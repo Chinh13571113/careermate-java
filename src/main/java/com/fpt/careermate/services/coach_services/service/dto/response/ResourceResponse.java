@@ -9,9 +9,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LessonResponse {
-    int id;
-    String title;
-    int position;
-    boolean marked;
+public class ResourceResponse {
+    String url;
 }

@@ -14,25 +14,17 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "package")
-public class Package {
+@Entity(name = "entitlement")
+public class Entitlement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
     String name;
-    Long price;
-    int durationDays;
+    String code;
+    String unit;
+    boolean hasLimit;
 
-
-
-    LocalDateTime createdAt;
-
-    @OneToMany(mappedBy = "candidatePackage")
+    @OneToMany(mappedBy = "entitlement")
     List<EntitlementPackage> entitlementPackages;
-
-    int priority;
-
-    @OneToOne(mappedBy = "candidatePackage")
-    Order candidateOrder;
 }

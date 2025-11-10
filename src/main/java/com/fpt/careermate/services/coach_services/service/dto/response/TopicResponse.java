@@ -10,9 +10,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ModuleResponse {
-    int id;
-    String title;
-    int position;
-    List<LessonResponse> lessons;
+public class TopicResponse {
+    String name;
+    String tags;
+    List<SubtopicResponse> subtopics;
 }

@@ -1,9 +1,11 @@
 package com.fpt.careermate.services.coach_services.domain;
 
+import com.fpt.careermate.services.profile_services.domain.Candidate;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,22 +16,17 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "module")
-public class Module {
+@Entity(name = "roadmap")
+public class Roadmap {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    @Column(nullable = false)
-    String title;
+    @Column(unique = true)
+    String name;
 
-    @Column(nullable = false)
-    int position;
+    // Một Roadmap có nhiều Topic
+    @OneToMany(mappedBy = "roadmap", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Topic> topics = new ArrayList<>();
 
-    @ManyToOne
-    @JoinColumn(name = "course_id", nullable = false)
-    Course course;
-
-    @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Lesson> lessons = new ArrayList<>();
 }

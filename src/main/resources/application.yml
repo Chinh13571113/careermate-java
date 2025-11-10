@@ -84,3 +84,5 @@ google:
 weaviate:
   url: ${WEAVIATE_URL:default}
   api-key: ${WEAVIATE_API_KEY:default}
+huggingface:
+  api-key: ${HUGGINGFACE_API_KEY:default}

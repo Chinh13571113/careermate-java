@@ -54,13 +54,10 @@ public class Candidate extends BaseUser {
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkModel> workModels;
 
-    // default: EAGER
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "package_id")
-    Package currentPackage;
 
-    @OneToMany(mappedBy = "candidate")
-    List<Order> orders;
+
+    @OneToOne(mappedBy = "candidate")
+    Order order;
 
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<JobApply> jobApplies = new HashSet<>();

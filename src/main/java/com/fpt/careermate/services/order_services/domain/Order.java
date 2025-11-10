@@ -1,6 +1,5 @@
 package com.fpt.careermate.services.order_services.domain;
 
-import com.fpt.careermate.services.payment_services.domain.Payment;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "orders")
+@Entity(name = "candidate_order")
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,14 +32,13 @@ public class Order {
     String packageNameSnapshot;
     Long packagePriceSnapshot;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "candidate_id")
-    Candidate candidate;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne
     @JoinColumn(name = "package_id")
     Package candidatePackage;
 
-    @OneToMany(mappedBy = "order")
-    List<Payment> payments;
+    @OneToOne
+    @JoinColumn(name = "candidate_id")
+    Candidate candidate;
+
+    boolean isActive;
 }

@@ -5,18 +5,13 @@ import lombok.experimental.FieldDefaults;
 
 import java.util.List;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class QuestionResponse {
-
-    int id;
-    String title;
-    String explanation;
-    List<OptionResponse> options;
-    OptionResponse correctOption;
-
+public class TopicDetailResponse {
+    String name;
+    String description;
+    List<ResourceResponse> resourceResponses;
 }

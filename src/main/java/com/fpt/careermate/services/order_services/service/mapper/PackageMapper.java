@@ -10,7 +10,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface PackageMapper {
-    @Mapping(target = "candidates", ignore = true)
+    @Mapping(target = "candidateOrder", ignore = true)
     Package toPackage(PackageCreationRequest request);
 
     PackageResponse toPackageResponse(Package pkg);

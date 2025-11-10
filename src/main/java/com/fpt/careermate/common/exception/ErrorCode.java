@@ -6,19 +6,21 @@ import org.springframework.http.HttpStatusCode;
 
 @Getter
 public enum ErrorCode {
-        UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
-        INVALID_JSON(9998, "Invalid JSON format or missing request body", HttpStatus.BAD_REQUEST),
-        EXTERNAL_API_ERROR(9997, "Error occurred while calling external API", HttpStatus.SERVICE_UNAVAILABLE),
-        RESPONSE_BODY_EMPTY(9996, "Response body from external API is empty", HttpStatus.SERVICE_UNAVAILABLE),
-        INVALID_KEY(1001, "Uncategorized error", HttpStatus.BAD_REQUEST),
-        USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
-        USERNAME_INVALID(1003, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
-        INVALID_PASSWORD(1004, "Password must be at least {min} characters", HttpStatus.BAD_REQUEST),
-        USER_NOT_EXISTED(1005, "User not existed", HttpStatus.NOT_FOUND),
-        UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
-        UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
-        INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
-        DUPLICATE_EMAIL(1009, "Your is email existed", HttpStatus.BAD_REQUEST),
+    UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_JSON(9998, "Invalid JSON format or missing request body", HttpStatus.BAD_REQUEST),
+    EXTERNAL_API_ERROR(9997, "Error occurred while calling external API", HttpStatus.SERVICE_UNAVAILABLE),
+    RESPONSE_BODY_EMPTY(9996, "Response body from external API is empty", HttpStatus.SERVICE_UNAVAILABLE),
+    FILE_NOT_FOUND(9995, "File not found", HttpStatus.INTERNAL_SERVER_ERROR),
+    IO_EXCEPTION(9994, "I/O exception occurred", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_KEY(1001, "Uncategorized error", HttpStatus.BAD_REQUEST),
+    USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
+    USERNAME_INVALID(1003, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
+    INVALID_PASSWORD(1004, "Password must be at least {min} characters", HttpStatus.BAD_REQUEST),
+    USER_NOT_EXISTED(1005, "User not existed", HttpStatus.NOT_FOUND),
+    UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
+    UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
+    INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
+    DUPLICATE_EMAIL(1009, "Your is email existed", HttpStatus.BAD_REQUEST),
 
         // 20xx: Order
         ORDER_NOT_FOUND(2000, "Order not found", HttpStatus.NOT_FOUND),
@@ -71,9 +73,12 @@ public enum ErrorCode {
         INVALID_FEEDBACK_TYPE(6018, "Invalid feedback type. Must be one of: like, dislike, save, view",
                         HttpStatus.BAD_REQUEST),
 
-        // 70xx: Coach
-        LESSON_NOT_FOUND(7000, "Lesson not found", HttpStatus.NOT_FOUND),
-        COURSE_NOT_FOUND(7001, "Course not found", HttpStatus.NOT_FOUND),
+    // 70xx: Coach
+    LESSON_NOT_FOUND(7000, "Lesson not found", HttpStatus.NOT_FOUND),
+    COURSE_NOT_FOUND(7001, "Course not found", HttpStatus.NOT_FOUND),
+    ROADMAP_NOT_FOUND(7002, "Roadmap not found", HttpStatus.NOT_FOUND),
+    TOPIC_NOT_FOUND(7003, "Topic not found", HttpStatus.NOT_FOUND),
+    SUBTOPIC_NOT_FOUND(7004, "Subtopic not found", HttpStatus.NOT_FOUND),
 
         BLOG_NOT_FOUND(1010, "Blog not found", HttpStatus.NOT_FOUND),
         BLOG_INVALID_STATUS(1011, "Invalid blog status", HttpStatus.BAD_REQUEST),

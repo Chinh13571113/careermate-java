@@ -6,10 +6,8 @@ import com.fpt.careermate.common.constant.StatusPayment;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
 import com.fpt.careermate.services.order_services.domain.Order;
 import com.fpt.careermate.services.order_services.domain.Package;
-import com.fpt.careermate.services.payment_services.domain.Payment;
 import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
 import com.fpt.careermate.services.order_services.repository.OrderRepo;
-import com.fpt.careermate.services.payment_services.repository.PaymentRepo;
 import com.fpt.careermate.services.payment_services.service.impl.PaymentService;
 import com.fpt.careermate.common.util.PaymentUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +35,6 @@ public class PaymentImp implements PaymentService {
 
     PaymentConfig paymentConfig;
     PaymentUtil paymentUtil;
-    PaymentRepo paymentRepo;
     OrderRepo orderRepo;
     CandidateRepo candidateRepo;
 
@@ -154,78 +151,79 @@ public class PaymentImp implements PaymentService {
             }
         }
 
-        try {
-            Optional<Payment> maybePayment = Optional.empty();
-            if (order != null) {
-                maybePayment = paymentRepo.findByOrder(order);
-            }
-
-            Payment payment = maybePayment.orElseGet(Payment::new);
-            payment.setTxnRef(vnpTxnRef);
-            payment.setTransactionNo(vnpTransactionNo);
-            payment.setAmount(amount);
-            payment.setResponseCode(vnpResponse);
-            payment.setBankCode(fields.get("vnp_BankCode"));
-            payment.setPayDate(vnpPayDate);
-            payment.setRawResponse(fields.toString());
-
-            // validate payment status
-            if (!valid) {
-                payment.setStatus(StatusPayment.INVALID_HASH);
-            } else if ("00".equals(vnpResponse)) {
-                payment.setStatus(StatusPayment.SUCCESS);
-            } else {
-                payment.setStatus(StatusPayment.FAILED);
-            }
+//        try {
+//            Optional<Payment> maybePayment = Optional.empty();
+//            if (order != null) {
+//                maybePayment = paymentRepo.findByOrder(order);
+//            }
+//
+//            Payment payment = maybePayment.orElseGet(Payment::new);
+//            payment.setTxnRef(vnpTxnRef);
+//            payment.setTransactionNo(vnpTransactionNo);
+//            payment.setAmount(amount);
+//            payment.setResponseCode(vnpResponse);
+//            payment.setBankCode(fields.get("vnp_BankCode"));
+//            payment.setPayDate(vnpPayDate);
+//            payment.setRawResponse(fields.toString());
+//
+//            // validate payment status
+//            if (!valid) {
+//                payment.setStatus(StatusPayment.INVALID_HASH);
+//            } else if ("00".equals(vnpResponse)) {
+//                payment.setStatus(StatusPayment.SUCCESS);
+//            } else {
+//                payment.setStatus(StatusPayment.FAILED);
+//            }
 
             // 3) assign relation payment -> found order
-            if (order != null) {
-                payment.setOrder(order);
-            }
+//            if (order != null) {
+//                payment.setOrder(order);
+//            }
 
             // 4) Save payment (idempotency: if success, not duplicate)
             // old payment is success -> skip updating order
-            if (maybePayment.isPresent()) {
-                Payment existing = maybePayment.get();
-
-                if (!existing.getStatus().equals(StatusPayment.SUCCESS)) {
-                    existing.setTransactionNo(payment.getTransactionNo());
-                    existing.setAmount(payment.getAmount());
-                    existing.setResponseCode(payment.getResponseCode());
-                    existing.setBankCode(payment.getBankCode());
-                    existing.setPayDate(payment.getPayDate());
-                    existing.setRawResponse(payment.getRawResponse());
-                    existing.setStatus(payment.getStatus());
-                    if (order != null) existing.setOrder(order);
-                    payment = paymentRepo.save(existing);
-                }
-            } else {
-                payment = paymentRepo.save(payment);
-            }
+//            if (maybePayment.isPresent()) {
+//                Payment existing = maybePayment.get();
+//
+//                if (!existing.getStatus().equals(StatusPayment.SUCCESS)) {
+//                    existing.setTransactionNo(payment.getTransactionNo());
+//                    existing.setAmount(payment.getAmount());
+//                    existing.setResponseCode(payment.getResponseCode());
+//                    existing.setBankCode(payment.getBankCode());
+//                    existing.setPayDate(payment.getPayDate());
+//                    existing.setRawResponse(payment.getRawResponse());
+//                    existing.setStatus(payment.getStatus());
+//                    if (order != null) existing.setOrder(order);
+//                    payment = paymentRepo.save(existing);
+//                }
+//            } else {
+//                payment = paymentRepo.save(payment);
+//            }
 
             // 5) if payment success -> update order & candidate
-            if (payment.getStatus().equals(StatusPayment.SUCCESS) && order != null) {
-                if (!order.getStatus().equals(StatusOrder.PAID)) {
-                    LocalDate now = LocalDate.now();
-
-                    order.setStatus(StatusOrder.PAID);
-                    order.setStartDate(now);
-                    Package pkg = order.getCandidatePackage();
-                    order.setEndDate(now.plusDays(pkg.getDurationDays()));
-                    orderRepo.save(order);
-
-                    Candidate candidate = order.getCandidate();
-                    if (candidate != null && pkg != null) {
-                        candidate.setCurrentPackage(pkg);
-                        candidateRepo.save(candidate);
-                    }
-                } else {
-                    log.info("Order {} already PAID, skipping applying package", order.getOrderCode());
-                }
-            }
-        } catch (Exception ex) {
-            log.error("Error saving payment/update order: {}", ex.getMessage(), ex);
-        }
+//            if (payment.getStatus().equals(StatusPayment.SUCCESS) && order != null) {
+//                if (!order.getStatus().equals(StatusOrder.PAID)) {
+//                    LocalDate now = LocalDate.now();
+//
+//                    order.setStatus(StatusOrder.PAID);
+//                    order.setStartDate(now);
+//                    Package pkg = order.getCandidatePackage();
+//                    order.setEndDate(now.plusDays(pkg.getDurationDays()));
+//                    orderRepo.save(order);
+//
+//                    Candidate candidate = order.getCandidate();
+//                    if (candidate != null && pkg != null) {
+//                        candidate.setCurrentPackage(pkg);
+//                        candidateRepo.save(candidate);
+//                    }
+//                } else {
+//                    log.info("Order {} already PAID, skipping applying package", order.getOrderCode());
+//                }
+//            }
+//        }
+//        catch (Exception ex) {
+//            log.error("Error saving payment/update order: {}", ex.getMessage(), ex);
+//        }
 
         // --- Build redirect query (forward original params except vnp_SecureHash) + serverVerified info ---
         StringBuilder qs = new StringBuilder();
