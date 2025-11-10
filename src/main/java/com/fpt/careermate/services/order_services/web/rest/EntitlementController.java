@@ -117,4 +117,20 @@ public class EntitlementController {
                 .message("success")
                 .build();
     }
+
+    @GetMapping("/cv-download-checker")
+    @Operation(description = """
+            Check if candidate can use Download CV feature
+            input: none
+            output: boolean
+            Need login as candidate to access this API
+            Use this API before calling Download CV API
+            """)
+    public ApiResponse<Boolean> canDownloadCV() {
+        return ApiResponse.<Boolean>builder()
+                .result(checkerService.canDownloadCV())
+                .code(200)
+                .message("success")
+                .build();
+    }
 }

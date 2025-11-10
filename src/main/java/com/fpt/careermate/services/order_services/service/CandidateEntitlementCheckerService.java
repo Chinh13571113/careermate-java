@@ -176,4 +176,11 @@ public class CandidateEntitlementCheckerService {
     public boolean canReviewRecruiterInfo() {
         return core(EntitlementCode.RECRUITER_INFO);
     }
+
+    /**
+     * Kiểm tra candidate có quyền dùng tính năng xem download CV không?
+     */
+    public boolean canDownloadCV() {
+        return core(EntitlementCode.CV_DOWNLOAD);
+    }
 }
