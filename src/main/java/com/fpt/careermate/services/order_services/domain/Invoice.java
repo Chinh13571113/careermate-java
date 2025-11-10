@@ -13,8 +13,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "candidate_order")
-public class CandidateOrder {
+@Entity(name = "invoice")
+public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
@@ -26,7 +26,7 @@ public class CandidateOrder {
     LocalDate createAt;
     LocalDate cancelledAt;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "package_id")
     CandidatePackage candidatePackage;
 

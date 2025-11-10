@@ -32,6 +32,6 @@ public class CandidatePackage {
 
     int priority;
 
-    @OneToOne(mappedBy = "candidatePackage")
-    CandidateOrder candidateOrder;
+    @OneToMany(mappedBy = "candidatePackage")
+    List<Invoice> invoices;
 }

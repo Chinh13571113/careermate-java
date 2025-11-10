@@ -7,7 +7,7 @@ import com.fpt.careermate.config.PaymentConfig;
 import com.fpt.careermate.common.constant.StatusPayment;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.account_services.repository.AccountRepo;
-import com.fpt.careermate.services.order_services.domain.CandidateOrder;
+import com.fpt.careermate.services.order_services.domain.Invoice;
 import com.fpt.careermate.services.order_services.domain.CandidatePackage;
 import com.fpt.careermate.services.order_services.service.OrderImp;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
@@ -81,7 +81,7 @@ public class PaymentImp implements PaymentService {
         vnpParams.put("vnp_CurrCode", "VND");
         if (bankCode != null && !bankCode.isEmpty()) vnpParams.put("vnp_BankCode", bankCode);
         vnpParams.put("vnp_TxnRef", vnp_TxnRef);
-        vnpParams.put("vnp_OrderInfo", "CandidateOrder payment:" + vnp_TxnRef);
+        vnpParams.put("vnp_OrderInfo", "Invoice payment:" + vnp_TxnRef);
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", (language == null || language.isEmpty()) ? "vn" : language);
         vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_ReturnUrl);
@@ -176,17 +176,17 @@ public class PaymentImp implements PaymentService {
         Optional<Candidate> exstingCandidate = candidateRepo.findByAccount_Id(exstingAccount.get().getId());
         Candidate candidate = exstingCandidate.get();
 
-        // Nếu không tìm thấy candidateOrder thì là Free package
-        if(candidate.getCandidateOrder() == null) {
-            // Tạo CandidateOrder mới
+        // Nếu không tìm thấy invoice thì là Free package
+        if(candidate.getInvoice() == null) {
+            // Tạo Invoice mới
             orderImp.createOrder(packageName, candidate);
         }
         else {
-            // Cập nhật CandidateOrder
-            // Tìm candidateOrder từ DB
-            CandidateOrder exstingCandidateOrder = candidate.getCandidateOrder();
+            // Cập nhật Invoice
+            // Tìm invoice từ DB
+            Invoice exstingInvoice = candidate.getInvoice();
             // Cập nhật trạng thái và các thông tin liên quan bằng việc gọi updateCandidateOrder method
-            orderImp.updateCandidateOrder(exstingCandidateOrder, packageName);
+            orderImp.updateCandidateOrder(exstingInvoice, packageName);
         }
 
         // --- Build redirect query (forward original params except vnp_SecureHash) + serverVerified info ---

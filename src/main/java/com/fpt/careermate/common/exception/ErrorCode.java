@@ -22,9 +22,9 @@ public enum ErrorCode {
     INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
     DUPLICATE_EMAIL(1009, "Your is email existed", HttpStatus.BAD_REQUEST),
 
-        // 20xx: CandidateOrder
-        ORDER_NOT_FOUND(2000, "CandidateOrder not found", HttpStatus.NOT_FOUND),
-        CANNOT_DELETE_ORDER(2001, "Cannot delete CandidateOrder if status is not PENDING", HttpStatus.FORBIDDEN),
+        // 20xx: Invoice
+        ORDER_NOT_FOUND(2000, "Invoice not found", HttpStatus.NOT_FOUND),
+        CANNOT_DELETE_ORDER(2001, "Cannot delete Invoice if status is not PENDING", HttpStatus.FORBIDDEN),
     PAYMENT_FAILED(2002, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED),
     CAN_NOT_PAY_FOR_FREE_PACKAGE(2003, "Cannot create payment URL for FREE package", HttpStatus.BAD_REQUEST),
     HAS_ACTIVE_PACKAGE(2004, "You already have an active package. Cannot pay new package until the current package expires.",

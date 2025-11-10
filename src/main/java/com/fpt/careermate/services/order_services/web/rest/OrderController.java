@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Validated
-@Tag(name = "CandidateOrder", description = "Manage candidateOrder")
+@Tag(name = "Invoice", description = "Manage invoice")
 @RestController
 @RequestMapping("/api/order")
 @RequiredArgsConstructor
@@ -30,7 +30,7 @@ public class OrderController {
 
     @Operation(summary = """
             Cancel candidate package by id
-            input: candidateOrder id
+            input: invoice id
             output: success message
             """)
     @DeleteMapping("/{id}")
@@ -42,7 +42,7 @@ public class OrderController {
                 .build();
     }
 
-    @Operation(summary = "Get candidateOrder list for admin")
+    @Operation(summary = "Get invoice list for admin")
     @GetMapping
     public ApiResponse<PageCandidateOrderResponse> getOrderList(
             @RequestParam(name = "page", defaultValue = "1") @Positive int page,
@@ -55,7 +55,7 @@ public class OrderController {
                 .build();
     }
 
-    @Operation(summary = "Get candidateOrder list for candidate")
+    @Operation(summary = "Get invoice list for candidate")
     @GetMapping("/my-pacakge")
     public ApiResponse<MyCandidateOrderResponse> myOrderList() {
         return ApiResponse.<MyCandidateOrderResponse>builder()

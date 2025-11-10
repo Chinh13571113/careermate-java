@@ -4,7 +4,7 @@ package com.fpt.careermate.services.order_services.service;
 import com.fpt.careermate.common.util.CoachUtil;
 import com.fpt.careermate.services.order_services.domain.CandidatePackage;
 import com.fpt.careermate.services.order_services.domain.EntitlementPackage;
-import com.fpt.careermate.services.order_services.domain.CandidateOrder;
+import com.fpt.careermate.services.order_services.domain.Invoice;
 import com.fpt.careermate.services.order_services.repository.EntitlementPackageRepo;
 import com.fpt.careermate.services.order_services.repository.PackageRepo;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
@@ -41,7 +41,7 @@ public class CandidateEntitlementCheckerService {
             return entitlement != null && entitlement.isEnabled();
         }
 
-        CandidatePackage currentCandidatePackage = coachUtil.getCurrentCandidate().getCandidateOrder().getCandidatePackage();
+        CandidatePackage currentCandidatePackage = coachUtil.getCurrentCandidate().getInvoice().getCandidatePackage();
         log.info("Current CandidatePackage Name: " + currentCandidatePackage.getName());
 
         // Lấy entitlement "entitlementCode"
@@ -52,12 +52,12 @@ public class CandidateEntitlementCheckerService {
         return entitlement != null && entitlement.isEnabled();
     }
 
-    // Khi có candidate mới, kiểm tra candidateOrder == null hoặc active == false là Free
+    // Khi có candidate mới, kiểm tra invoice == null hoặc active == false là Free
     private boolean checkFreePackage() {
         Candidate currentCandidate = coachUtil.getCurrentCandidate();
-        CandidateOrder candidateOrder = currentCandidate.getCandidateOrder();
+        Invoice invoice = currentCandidate.getInvoice();
 
-        if(candidateOrder == null || !candidateOrder.isActive()) {
+        if(invoice == null || !invoice.isActive()) {
             return true;
         }
 
