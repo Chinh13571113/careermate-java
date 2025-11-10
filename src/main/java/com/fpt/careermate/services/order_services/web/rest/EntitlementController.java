@@ -23,7 +23,7 @@ public class EntitlementController {
     CandidateEntitlementCheckerService checkerService;
 
     @GetMapping("/roadmap-recommendation-checker")
-    @Operation(summary = """
+    @Operation(description = """
             Check if candidate can use Roadmap Recommendation feature
             input: none
             output: boolean
@@ -39,7 +39,7 @@ public class EntitlementController {
     }
 
     @GetMapping("/job-recommendation-checker")
-    @Operation(summary = """
+    @Operation(description = """
             Check if candidate can use Job Recommendation feature
             input: none
             output: boolean
@@ -49,6 +49,22 @@ public class EntitlementController {
     public ApiResponse<Boolean> canUseJobRecommendation() {
         return ApiResponse.<Boolean>builder()
                 .result(checkerService.canUseJobRecommendation())
+                .code(200)
+                .message("success")
+                .build();
+    }
+
+    @GetMapping("/ai-analyzer-checker")
+    @Operation(description = """
+            Check if candidate can use AI Analyzer feature
+            input: none
+            output: boolean
+            Need login as candidate to access this API
+            Use this API before calling AI Analyzer API
+            """)
+    public ApiResponse<Boolean> canUseAIAnalyzer() {
+        return ApiResponse.<Boolean>builder()
+                .result(checkerService.canUseAIAnalyzer())
                 .code(200)
                 .message("success")
                 .build();

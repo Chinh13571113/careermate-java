@@ -1,6 +1,7 @@
 package com.fpt.careermate.services.order_services.service;
 
 
+import com.fpt.careermate.common.constant.EntitlementCode;
 import com.fpt.careermate.common.util.CoachUtil;
 import com.fpt.careermate.services.order_services.domain.CandidatePackage;
 import com.fpt.careermate.services.order_services.domain.EntitlementPackage;
@@ -42,7 +43,6 @@ public class CandidateEntitlementCheckerService {
         }
 
         CandidatePackage currentCandidatePackage = coachUtil.getCurrentCandidate().getInvoice().getCandidatePackage();
-        log.info("Current CandidatePackage Name: " + currentCandidatePackage.getName());
 
         // Lấy entitlement "entitlementCode"
         EntitlementPackage entitlement = entitlementPackageRepo
@@ -68,15 +68,21 @@ public class CandidateEntitlementCheckerService {
      * Kiểm tra candidate có quyền dùng tính năng Job Recommendation không?
      */
     public boolean canUseJobRecommendation() {
-        String JOB_RECOMMENDATION = "JOB_RECOMMENDATION";
-        return core(JOB_RECOMMENDATION);
+        return core(EntitlementCode.JOB_RECOMMENDATION);
     }
 
     /**
      * Kiểm tra candidate có quyền dùng tính năng Roadmap Recommendation không?
      */
     public boolean canUseRoadmapRecommendation() {
-        String AI_ROADMAP = "AI_ROADMAP";
-        return core(AI_ROADMAP);
+        return core(EntitlementCode.AI_ROADMAP);
+    }
+
+    /**
+     * Kiểm tra candidate có quyền dùng tính năng AI Analyzer không?
+     */
+
+    public boolean canUseAIAnalyzer() {
+        return core(EntitlementCode.AI_ANALYZER);
     }
 }
