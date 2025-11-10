@@ -59,17 +59,19 @@ public class OrderImp implements OrderService {
 
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
-    public void deleteOrder(int id) {
+    public void cancelOrder(int id) {
         CandidateOrder candidateOrder = orderRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        if (!candidateOrder.getStatus().equals(StatusOrder.PENDING)) {
+        if (candidateOrder.getStatus().equals(StatusOrder.PAID)) {
+            candidateOrder.setStatus(StatusOrder.CANCELLED);
+            candidateOrder.setCancelledAt(LocalDate.now());
+            candidateOrder.setActive(false);
+            orderRepo.save(candidateOrder);
+        }
+        else {
             throw new AppException(ErrorCode.CANNOT_DELETE_ORDER);
         }
-
-        candidateOrder.setStatus(StatusOrder.CANCELLED);
-        candidateOrder.setCancelledAt(LocalDate.now());
-        orderRepo.save(candidateOrder);
     }
 
     @PreAuthorize("hasRole('CANDIDATE')")

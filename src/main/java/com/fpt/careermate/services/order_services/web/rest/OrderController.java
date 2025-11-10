@@ -27,12 +27,15 @@ public class OrderController {
 
     OrderImp orderImp;
 
-    @Operation(summary = "Delete candidateOrder by ID")
+    @Operation(summary = """
+            Cancel candidate package by id
+            input: candidateOrder id
+            output: success message
+            """)
     @DeleteMapping("/{id}")
-    public ApiResponse<String> deleteOrder(@Positive @PathVariable int id) {
-        orderImp.deleteOrder(id);
-        return ApiResponse.<String>builder()
-                .result("")
+    public ApiResponse<Void> cancelOrder(@Positive @PathVariable int id) {
+        orderImp.cancelOrder(id);
+        return ApiResponse.<Void>builder()
                 .code(200)
                 .message("success")
                 .build();
