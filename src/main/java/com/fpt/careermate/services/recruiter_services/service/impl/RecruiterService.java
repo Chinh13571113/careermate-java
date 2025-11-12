@@ -6,6 +6,7 @@ import com.fpt.careermate.services.recruiter_services.service.dto.request.Recrui
 import com.fpt.careermate.services.recruiter_services.service.dto.request.RecruiterUpdateRequest;
 import com.fpt.careermate.services.recruiter_services.service.dto.response.NewRecruiterResponse;
 import com.fpt.careermate.services.recruiter_services.service.dto.response.RecruiterApprovalResponse;
+import com.fpt.careermate.services.authentication_services.service.dto.request.RecruiterRegistrationRequest;
 import com.fpt.careermate.services.recruiter_services.service.dto.response.RecruiterProfileResponse;
 import com.fpt.careermate.services.recruiter_services.service.dto.response.RecruiterUpdateRequestResponse;
 
@@ -23,6 +24,9 @@ public interface RecruiterService {
     PageResponse<RecruiterApprovalResponse> searchRecruiters(String status, String search, int page, int size, String sortBy, String sortDir);
     RecruiterApprovalResponse getRecruiterById(int recruiterId);
 
+    // Recruiter self-service methods
+    RecruiterApprovalResponse getMyRecruiterProfile();
+    void updateOrganizationInfo(RecruiterRegistrationRequest.OrganizationInfo orgInfo);
     // Recruiter profile management
     RecruiterProfileResponse getMyProfile();
     RecruiterUpdateRequestResponse requestProfileUpdate(RecruiterUpdateRequest request);
