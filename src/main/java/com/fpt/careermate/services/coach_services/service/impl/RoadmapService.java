@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface RoadmapService {
     void addRoadmap(String nameRoadmap, String fileName);
-    RoadmapResponse getRoadmap(int roadmapId);
+    RoadmapResponse getRoadmap(String roadmapName);
     TopicDetailResponse getTopicDetail(int topicId);
     TopicDetailResponse getSubtopicDetail(int subtopicId);
     List<RecommendedRoadmapResponse> recommendRoadmap(String role);

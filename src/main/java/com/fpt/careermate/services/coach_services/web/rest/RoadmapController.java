@@ -43,17 +43,17 @@ public class RoadmapController {
                 .build();
     }
 
-    @GetMapping("/{roadmapId}")
+    @GetMapping()
     @Operation(description = """
-            Get roadmap by id
-            input: roadmapId
+            Get roadmap by name
+            input: roadmapName
             output: RoadmapResponse have topics and subtopics
             Need login as CANDIDATE to access this API
             """)
-    public ApiResponse<RoadmapResponse> getRoadmap(@PathVariable int roadmapId)
+    public ApiResponse<RoadmapResponse> getRoadmap(@RequestParam String roadmapName)
     {
         return ApiResponse.<RoadmapResponse>builder()
-                .result(roadmapImp.getRoadmap(roadmapId))
+                .result(roadmapImp.getRoadmap(roadmapName))
                 .code(200)
                 .message("success")
                 .build();

@@ -5,8 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -14,25 +13,26 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "package")
-public class Package {
+@Entity(name = "invoice")
+public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    String name;
-    Long price;
-    int durationDays;
+    Long amount;
+    String status;
+    LocalDate startDate;
+    LocalDate endDate;
+    LocalDate createAt;
+    LocalDate cancelledAt;
 
+    @ManyToOne
+    @JoinColumn(name = "package_id")
+    CandidatePackage candidatePackage;
 
+    @OneToOne
+    @JoinColumn(name = "candidate_id")
+    Candidate candidate;
 
-    LocalDateTime createdAt;
-
-    @OneToMany(mappedBy = "candidatePackage")
-    List<EntitlementPackage> entitlementPackages;
-
-    int priority;
-
-    @OneToOne(mappedBy = "candidatePackage")
-    Order candidateOrder;
+    boolean isActive;
 }

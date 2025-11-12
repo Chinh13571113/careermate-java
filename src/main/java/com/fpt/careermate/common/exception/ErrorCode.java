@@ -22,12 +22,17 @@ public enum ErrorCode {
     INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
     DUPLICATE_EMAIL(1009, "Your is email existed", HttpStatus.BAD_REQUEST),
 
-        // 20xx: Order
-        ORDER_NOT_FOUND(2000, "Order not found", HttpStatus.NOT_FOUND),
-        CANNOT_DELETE_ORDER(2001, "Cannot delete Order if status is not PENDING", HttpStatus.FORBIDDEN),
+        // 20xx: Invoice
+        ORDER_NOT_FOUND(2000, "Invoice not found", HttpStatus.NOT_FOUND),
+        CANNOT_DELETE_ORDER(2001, "Cannot delete Invoice if status is not PENDING", HttpStatus.FORBIDDEN),
+    PAYMENT_FAILED(2002, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED),
+    CAN_NOT_PAY_FOR_FREE_PACKAGE(2003, "Cannot create payment URL for FREE package", HttpStatus.BAD_REQUEST),
+    HAS_ACTIVE_PACKAGE(2004, "You already have an active package. Cannot pay new package until the current package expires.",
+                    HttpStatus.BAD_REQUEST),
 
-        // 30xx: Package
-        PACKAGE_NOT_FOUND(3000, "Package not found", HttpStatus.NOT_FOUND),
+        // 30xx: CandidatePackage
+        PACKAGE_NOT_FOUND(3000, "CandidatePackage not found", HttpStatus.NOT_FOUND),
+    USING_FREE_PACAKGE(3001, "You are using FREE package", HttpStatus.BAD_REQUEST),
 
         // 40xx: Recruiter
         INVALID_WEBSITE(4000, "Website is not reachable", HttpStatus.BAD_REQUEST),
@@ -42,6 +47,9 @@ public enum ErrorCode {
         UPDATE_REQUEST_NOT_FOUND(4007, "Profile update request not found", HttpStatus.NOT_FOUND),
         UPDATE_REQUEST_ALREADY_PROCESSED(4008, "This update request has already been processed",
                         HttpStatus.BAD_REQUEST),
+        RECRUITER_NOT_VERIFIED(4009,
+                        "Your recruiter profile is not yet approved by admin. Please wait for verification.",
+                        HttpStatus.FORBIDDEN),
 
         // 50xx: JdSkill
         SKILL_EXISTED(5000, "JdSkill existed", HttpStatus.BAD_REQUEST),

@@ -10,15 +10,9 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderResponse {
-     int id;
-     Long amount;
-     String status;
-
-    LocalDate createAt;
+public class MyCandidateOrderResponse {
     LocalDate startDate;
     LocalDate endDate;
-
-    int candidateId;
-    int packageId;
+    String packageName;
+    Long amount;
 }

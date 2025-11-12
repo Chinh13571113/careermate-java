@@ -53,7 +53,7 @@ public class RoadmapImp implements RoadmapService {
     @Transactional
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public void addRoadmap(String nameRoadmap, String fileName) {
+    public void addRoadmap(String roadmapName, String fileName) {
         String filePath = "../django/agent_core/data/craw/"+fileName;
         List<Topic> topics = new ArrayList<>();
         // Lấy thư mục làm việc hiện tại (thư mục mà chương trình đang được chạy)
@@ -72,14 +72,14 @@ public class RoadmapImp implements RoadmapService {
 
             //Tạo đối tượng Roadmap từ các giá trị lấy được
             Roadmap roadmap = new Roadmap();
-            roadmap.setName(nameRoadmap);
+            roadmap.setName(roadmapName.toUpperCase().trim());
 
             // Duyệt từng dòng (record) trong file CSV
             records.forEach(record -> {
                 // Lấy giá trị cột "topic" từ mỗi dòng
                 String topic = record.get("topic");
                 String subtopic = record.get("subtopic");
-                String tags = record.get("tags");
+                String tags = record.get("tags") != null ? record.get("tags") : "";
                 String resources = record.get("resources");
                 String description = record.get("description");
 
@@ -109,7 +109,7 @@ public class RoadmapImp implements RoadmapService {
             // Thêm Roadmap vào Postgres
             roadmapRepo.save(roadmap);
             // Thêm Roadmap vào Weaviate
-            addRoadmapToWeaviate(nameRoadmap);
+            addRoadmapToWeaviate(roadmapName);
         } catch (FileNotFoundException e) {
             throw new AppException(ErrorCode.FILE_NOT_FOUND);
         } catch (IOException e) {
@@ -120,8 +120,8 @@ public class RoadmapImp implements RoadmapService {
     // Lấy roadmap detail từ Postgres
     @Override
     @PreAuthorize("hasRole('CANDIDATE')")
-    public RoadmapResponse getRoadmap(int roadmapId) {
-        Roadmap roadmap = roadmapRepo.findById(roadmapId)
+    public RoadmapResponse getRoadmap(String roadmapName) {
+        Roadmap roadmap = roadmapRepo.findByName(roadmapName.toUpperCase().trim())
                 .orElseThrow(() -> new AppException(ErrorCode.ROADMAP_NOT_FOUND));
 
         return roadmapMapper.toRoadmapResponse(roadmap);
@@ -180,7 +180,7 @@ public class RoadmapImp implements RoadmapService {
         // "certainty" là ngưỡng độ tin cậy tối thiểu của kết quả (0.7f = 70%)
         NearTextArgument nearText = NearTextArgument.builder()
                 // vì SDK được sinh máy móc từ định nghĩa GraphQL, nên nó phản ánh y nguyên kiểu danh sách.
-                .concepts(new String[]{role.toLowerCase().trim()})
+                .concepts(new String[]{role.toUpperCase().trim()})
                 .certainty(0.71f)
                 .targetVectors(target_vector) // Sử dụng trường vector tùy chỉnh
                 .build();
@@ -235,7 +235,7 @@ public class RoadmapImp implements RoadmapService {
 
         // Tạo roadmap map để thêm vào weaviate
         Map<String,Object> roadmapMap = new HashMap<>();
-        roadmapMap.put("name", name.toLowerCase().trim());
+        roadmapMap.put("name", name.toUpperCase().trim());
 
         Result<WeaviateObject> result = client.data().creator()
                 .withClassName(weaviateClassName)

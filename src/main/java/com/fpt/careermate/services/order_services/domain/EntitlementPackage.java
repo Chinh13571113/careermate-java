@@ -28,14 +28,14 @@ public class EntitlementPackage {
 
     @ManyToOne
     @JoinColumn(name = "package_id")
-    Package candidatePackage;
+    CandidatePackage candidatePackage;
 
     public EntitlementPackage(
             boolean enabled,
             int limitValue,
             LocalDateTime createdAt,
             Entitlement entitlement,
-            Package candidatePackage
+            CandidatePackage candidatePackage
     ) {
         this.enabled = enabled;
         this.limitValue = limitValue;

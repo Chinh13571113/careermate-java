@@ -2,10 +2,9 @@ package com.fpt.careermate.services.profile_services.domain;
 
 import com.fpt.careermate.services.coach_services.domain.Course;
 import com.fpt.careermate.services.job_services.domain.JobFeedback;
-import com.fpt.careermate.services.order_services.domain.Package;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.job_services.domain.JobApply;
-import com.fpt.careermate.services.order_services.domain.Order;
+import com.fpt.careermate.services.order_services.domain.Invoice;
 import com.fpt.careermate.services.resume_services.domain.Resume;
 import jakarta.persistence.*;
 import lombok.*;
@@ -57,7 +56,7 @@ public class Candidate extends BaseUser {
 
 
     @OneToOne(mappedBy = "candidate")
-    Order order;
+    Invoice invoice;
 
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<JobApply> jobApplies = new HashSet<>();
