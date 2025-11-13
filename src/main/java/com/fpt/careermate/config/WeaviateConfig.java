@@ -1,8 +1,10 @@
 package com.fpt.careermate.config;
 
 import io.weaviate.client.Config;
+import io.weaviate.client.WeaviateAuthClient;
 import io.weaviate.client.WeaviateClient;
 import lombok.extern.slf4j.Slf4j;
+import io.weaviate.client.v1.auth.exception.AuthException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +25,11 @@ public class WeaviateConfig {
     @Value("${weaviate.vectorizer:text2vec-weaviate}")
     private String vectorizer;
 
+    @Value("${google.api-key}")
+    private String studio_key;
+
+    @Value("${huggingface.api-key}")
+    private String hf_key;
 
     @Bean
     public WeaviateClient weaviateClient() {
@@ -35,11 +42,18 @@ public class WeaviateConfig {
                 ? "http"
                 : "https";
 
+            String clusterUrl = "https://oei76mp3ttcpw5prggx3fq.c0.asia-southeast1.gcp.weaviate.cloud";
+
             // Remove any protocol prefix if present
             cleanUrl = cleanUrl.replaceFirst("^https?://", "");
 
             Config config;
             Map<String, String> headers = new HashMap<>();
+
+
+        headers.put("X-Weaviate-Cluster-URL", clusterUrl);
+        headers.put("X-Goog-Studio-Api-Key", studio_key);
+        headers.put("X-HuggingFace-Api-Key", hf_key);
 
             if (apiKey != null && !apiKey.isEmpty()) {
                 String cleanApiKey = apiKey.trim();
