@@ -4,6 +4,7 @@ import com.fpt.careermate.common.constant.PredefineRole;
 import com.fpt.careermate.common.exception.AppException;
 import com.fpt.careermate.common.exception.ErrorCode;
 import com.fpt.careermate.common.util.UrlValidator;
+import com.fpt.careermate.common.util.MailBody;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.account_services.repository.AccountRepo;
 import com.fpt.careermate.services.authentication_services.domain.Role;
@@ -11,6 +12,7 @@ import com.fpt.careermate.services.authentication_services.repository.RoleRepo;
 import com.fpt.careermate.services.authentication_services.service.dto.request.RecruiterRegistrationRequest;
 import com.fpt.careermate.services.recruiter_services.domain.Recruiter;
 import com.fpt.careermate.services.recruiter_services.repository.RecruiterRepo;
+import com.fpt.careermate.services.email_services.service.impl.EmailService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,6 +35,7 @@ public class RegistrationService {
     RoleRepo roleRepo;
     PasswordEncoder passwordEncoder;
     UrlValidator urlValidator;
+    EmailService emailService;
 
     /**
      * Register a new recruiter account with organization info
@@ -145,13 +148,23 @@ public class RegistrationService {
         accountRepo.save(account);
         recruiterRepo.save(recruiter);
 
-        log.info("Recruiter approved. Account ID: {}, Account Status: {} → ACTIVE, Verification Status: {} → APPROVED",
-                account.getId(), account.getStatus(), recruiter.getVerificationStatus());
+        // send email notification
+        try {
+            String subject = "Your recruiter account has been approved";
+            String text = String.format("Hello %s,\n\nYour recruiter account for %s has been approved and is now active. You can sign in and start posting jobs.\n\nBest regards,\nCareerMate Team",
+                    account.getUsername(), recruiter.getCompanyName());
+            emailService.sendSimpleEmail(MailBody.builder().to(account.getEmail()).subject(subject).text(text).build());
+        } catch (Exception ex) {
+            log.warn("Failed to send approval email to {}: {}", account.getEmail(), ex.getMessage());
+        }
+
+        log.info("Recruiter account approved. Account ID: {}, Status: PENDING → ACTIVE", account.getId());
     }
 
     /**
      * Reject recruiter account (admin action)
-     * Sets both account and recruiter to rejected status with reason
+     * Marks the recruiter as REJECTED and stores the rejection reason
+     * Changes account status to REJECTED to prevent login
      */
     @Transactional
     public void rejectRecruiterAccount(int recruiterId, String reason) {
@@ -160,16 +173,33 @@ public class RegistrationService {
 
         Account account = recruiter.getAccount();
 
-        // Set both statuses to REJECTED
-        account.setStatus("REJECTED");
+        // Check if already rejected
+        if ("REJECTED".equals(recruiter.getVerificationStatus())) {
+            throw new AppException(ErrorCode.RECRUITER_ALREADY_REJECTED);
+        }
+
+        // Mark recruiter as rejected and store reason
         recruiter.setVerificationStatus("REJECTED");
         recruiter.setRejectionReason(reason != null ? reason : "No reason provided");
 
-        accountRepo.save(account);
-        recruiterRepo.save(recruiter);
+        // Change account status to REJECTED to prevent login
+        account.setStatus("REJECTED");
 
-        log.info("Recruiter rejected. Account ID: {}, Email: {}, Reason: {}",
-                account.getId(), account.getEmail(), reason);
+        recruiterRepo.save(recruiter);
+        accountRepo.save(account);
+
+        // send rejection email
+        try {
+            String subject = "Your recruiter application has been rejected";
+            String text = String.format("Hello %s,\n\nWe reviewed your recruiter application for %s and unfortunately it has been rejected. Reason: %s\n\nIf you believe this is a mistake, please contact support.\n\nBest regards,\nCareerMate Team",
+                    account.getUsername(), recruiter.getCompanyName(), recruiter.getRejectionReason());
+            emailService.sendSimpleEmail(MailBody.builder().to(account.getEmail()).subject(subject).text(text).build());
+        } catch (Exception ex) {
+            log.warn("Failed to send rejection email to {}: {}", account.getEmail(), ex.getMessage());
+        }
+
+        log.info("Recruiter account rejected. Account ID: {}, Email: {}, Status: {} → REJECTED, Reason: {}",
+                account.getId(), account.getEmail(), account.getStatus(), reason);
     }
 
     /**
@@ -191,6 +221,16 @@ public class RegistrationService {
 
         account.setStatus("BANNED");
         accountRepo.save(account);
+
+        // send ban email
+        try {
+            String subject = "Your account has been banned";
+            String text = String.format("Hello %s,\n\nYour account has been banned. Reason: %s\n\nIf you want to appeal, please contact support.",
+                    account.getUsername(), reason != null ? reason : "No reason provided");
+            emailService.sendSimpleEmail(MailBody.builder().to(account.getEmail()).subject(subject).text(text).build());
+        } catch (Exception ex) {
+            log.warn("Failed to send ban email to {}: {}", account.getEmail(), ex.getMessage());
+        }
 
         log.info("Account banned. ID: {}, Reason: {}", accountId, reason);
     }
@@ -214,6 +254,16 @@ public class RegistrationService {
 
         account.setStatus("ACTIVE");
         accountRepo.save(account);
+
+        // send unban email
+        try {
+            String subject = "Your account has been unbanned";
+            String text = String.format("Hello %s,\n\nYour account has been unbanned and is now active.\n\nBest regards,\nCareerMate Team",
+                    account.getUsername());
+            emailService.sendSimpleEmail(MailBody.builder().to(account.getEmail()).subject(subject).text(text).build());
+        } catch (Exception ex) {
+            log.warn("Failed to send unban email to {}: {}", account.getEmail(), ex.getMessage());
+        }
 
         log.info("Account unbanned. ID: {}", accountId);
     }
@@ -250,3 +300,4 @@ public class RegistrationService {
                 .build();
     }
 }
+

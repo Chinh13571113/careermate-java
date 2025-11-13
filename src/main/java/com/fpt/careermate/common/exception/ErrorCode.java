@@ -50,6 +50,10 @@ public enum ErrorCode {
         RECRUITER_NOT_VERIFIED(4009,
                         "Your recruiter profile is not yet approved by admin. Please wait for verification.",
                         HttpStatus.FORBIDDEN),
+    // 40xx: Recruiter
+    RECRUITER_ALREADY_REJECTED(4006, "Recruiter profile is already rejected", HttpStatus.BAD_REQUEST),
+    ACCOUNT_BANNED(4007, "Your account has been banned. You cannot update your profile.", HttpStatus.FORBIDDEN),
+    CANNOT_UPDATE_NON_REJECTED_PROFILE(4008, "You can only update organization information if your account is REJECTED. Current status allows you to access the system.", HttpStatus.BAD_REQUEST),
 
         // 50xx: JdSkill
         SKILL_EXISTED(5000, "JdSkill existed", HttpStatus.BAD_REQUEST),
