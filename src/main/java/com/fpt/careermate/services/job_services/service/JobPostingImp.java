@@ -21,8 +21,12 @@ import com.fpt.careermate.services.job_services.service.mapper.JobPostingMapper;
 import com.fpt.careermate.services.recruiter_services.domain.Recruiter;
 import com.fpt.careermate.services.recruiter_services.service.dto.response.RecruiterBasicInfoResponse;
 import com.fpt.careermate.common.util.JobPostingValidator;
+import com.fpt.careermate.common.util.MailBody;
 import com.fpt.careermate.common.exception.AppException;
 import com.fpt.careermate.common.exception.ErrorCode;
+import com.fpt.careermate.services.email_services.service.impl.EmailService;
+import com.fpt.careermate.services.kafka.dto.NotificationEvent;
+import com.fpt.careermate.services.kafka.producer.NotificationProducer;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.v1.data.model.WeaviateObject;
@@ -40,6 +44,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -58,6 +68,8 @@ public class JobPostingImp implements JobPostingService {
     AuthenticationImp authenticationImp;
     JobPostingValidator jobPostingValidator;
     WeaviateImp weaviateImp;
+    EmailService emailService;
+    NotificationProducer notificationProducer;
 
     // Recruiter create job posting
     @PreAuthorize("hasRole('RECRUITER')")
@@ -107,6 +119,12 @@ public class JobPostingImp implements JobPostingService {
 
         // Add to weaviate
         weaviateImp.addJobPostingToWeaviate(savedPostgres);
+
+        // Send notification to admin about new job posting pending approval
+        sendJobPostingPendingNotification(savedPostgres);
+
+        log.info("Job posting created successfully by recruiter: {} with ID: {}",
+                recruiter.getCompanyName(), savedPostgres.getId());
     }
 
     // Get all job postings of the current recruiter with all status
@@ -114,29 +132,7 @@ public class JobPostingImp implements JobPostingService {
     @Override
     public PageJobPostingForRecruiterResponse getAllJobPostingForRecruiter(
             int page, int size, String keyword) {
-        Recruiter recruiter = getMyRecruiter();
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createAt").ascending());
-
-        Page<JobPosting> pageJobPosting;
-        if (keyword == null || keyword.isEmpty()) {
-            // Lấy tất cả
-            pageJobPosting = jobPostingRepo.findAllByRecruiterId(recruiter.getId(), pageable);
-        } else {
-            // Lọc theo keyword (ví dụ search trong title)
-            pageJobPosting = jobPostingRepo
-                    .findByRecruiterIdAndTitleContainingIgnoreCase(recruiter.getId(), keyword, pageable);
-        }
-
-        List<JobPostingForRecruiterResponse> jobPostingForRecruiterResponses = pageJobPosting
-                .stream()
-                .map(jobPostingMapper::toJobPostingDetailForRecruiterResponse)
-                .collect(Collectors.toList());
-
-        PageJobPostingForRecruiterResponse pageResponse = jobPostingMapper
-                .toPageJobPostingForRecruiterResponse(pageJobPosting);
-        pageResponse.setContent(jobPostingForRecruiterResponses);
-
-        return pageResponse;
+        return gellAllJobPostings(page, size, keyword, 0);
     }
 
 
@@ -396,6 +392,9 @@ public class JobPostingImp implements JobPostingService {
             jobPosting.setRejectionReason(null); // Clear any previous rejection reason
             log.info("Job posting ID: {} APPROVED by admin: {}", id, admin.getEmail());
 
+            // Send approval notification to recruiter
+            sendJobPostingApprovedNotification(jobPosting);
+
         } else if (newStatus.equals("REJECTED")) {
             // Reject: Require rejection reason
             if (request.getRejectionReason() == null || request.getRejectionReason().trim().isEmpty()) {
@@ -405,6 +404,9 @@ public class JobPostingImp implements JobPostingService {
             jobPosting.setRejectionReason(request.getRejectionReason());
             jobPosting.setApprovedBy(admin);
             log.info("Job posting ID: {} REJECTED by admin: {}", id, admin.getEmail());
+
+            // Send rejection notification to recruiter
+            sendJobPostingRejectedNotification(jobPosting);
 
         } else {
             throw new AppException(ErrorCode.INVALID_APPROVAL_STATUS);
@@ -565,4 +567,210 @@ public class JobPostingImp implements JobPostingService {
                 .build();
     }
 
+    // ======================== KAFKA NOTIFICATION METHODS ========================
+
+    /**
+     * Send notification to admin when a new job posting is created (PENDING status)
+     */
+    private void sendJobPostingPendingNotification(JobPosting jobPosting) {
+        try {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("jobPostingId", jobPosting.getId());
+            metadata.put("jobTitle", jobPosting.getTitle());
+            metadata.put("companyName", jobPosting.getRecruiter().getCompanyName());
+            metadata.put("recruiterId", jobPosting.getRecruiter().getId());
+            metadata.put("createdAt", jobPosting.getCreateAt().toString());
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType(NotificationEvent.EventType.SYSTEM_NOTIFICATION.name())
+                    .recipientId("ADMIN")
+                    .recipientEmail("admin@careermate.com")
+                    .title("New Job Posting Pending Approval")
+                    .subject("Job Posting Requires Review")
+                    .message(String.format(
+                            "A new job posting '%s' from company '%s' requires your review and approval.",
+                            jobPosting.getTitle(),
+                            jobPosting.getRecruiter().getCompanyName()))
+                    .category("JOB_POSTING_APPROVAL")
+                    .metadata(metadata)
+                    .priority(2) // MEDIUM priority
+                    .build();
+
+            notificationProducer.sendAdminNotification(event);
+            log.info("✅ Sent pending job posting notification to admin for job ID: {}", jobPosting.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send pending job posting notification to admin for job ID: {}",
+                    jobPosting.getId(), e);
+        }
+    }
+
+    /**
+     * Send notification to recruiter when their job posting is approved
+     */
+    private void sendJobPostingApprovedNotification(JobPosting jobPosting) {
+        String emailMessage = String.format(
+                "Great news! Your job posting '%s' has been approved and is now live on CareerMate.\n\n" +
+                "Job Details:\n" +
+                "- Title: %s\n" +
+                "- Location: %s\n" +
+                "- Expiration Date: %s\n\n" +
+                "Candidates can now view and apply to your job posting.\n\n" +
+                "Best regards,\n" +
+                "CareerMate Team",
+                jobPosting.getTitle(),
+                jobPosting.getTitle(),
+                jobPosting.getAddress(),
+                jobPosting.getExpirationDate()
+        );
+
+        try {
+            // Send Kafka notification for in-app notification
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("jobPostingId", jobPosting.getId());
+            metadata.put("jobTitle", jobPosting.getTitle());
+            metadata.put("approvedBy", jobPosting.getApprovedBy().getEmail());
+            metadata.put("status", jobPosting.getStatus());
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType(NotificationEvent.EventType.JOB_POSTING_APPROVED.name())
+                    .recipientId(String.valueOf(jobPosting.getRecruiter().getId()))
+                    .recipientEmail(jobPosting.getRecruiter().getAccount().getEmail())
+                    .title("Job Posting Approved")
+                    .subject("Your Job Posting Has Been Approved")
+                    .message(emailMessage)
+                    .category("JOB_POSTING_STATUS")
+                    .metadata(metadata)
+                    .priority(2) // MEDIUM priority
+                    .build();
+
+            notificationProducer.sendRecruiterNotification(event);
+            log.info("✅ Sent approval notification to recruiter for job ID: {}", jobPosting.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send approval notification to recruiter for job ID: {}",
+                    jobPosting.getId(), e);
+        }
+
+        // Send email notification
+        try {
+            MailBody mailBody = MailBody.builder()
+                    .to(jobPosting.getRecruiter().getAccount().getEmail())
+                    .subject("Your Job Posting Has Been Approved")
+                    .text(emailMessage)
+                    .build();
+
+            emailService.sendSimpleEmail(mailBody);
+            log.info("✅ Job posting approval email sent to recruiter for job ID: {}", jobPosting.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send job posting approval email for job ID: {}",
+                    jobPosting.getId(), e);
+        }
+    }
+
+    /**
+     * Send notification to recruiter when their job posting is rejected
+     */
+    private void sendJobPostingRejectedNotification(JobPosting jobPosting) {
+        String emailMessage = String.format(
+                "Your job posting '%s' was not approved and requires updates.\n\n" +
+                "Rejection Reason:\n%s\n\n" +
+                "Please review the feedback above and resubmit your job posting after making the necessary changes.\n\n" +
+                "If you have any questions, please contact our support team.\n\n" +
+                "Best regards,\n" +
+                "CareerMate Team",
+                jobPosting.getTitle(),
+                jobPosting.getRejectionReason() != null ? jobPosting.getRejectionReason() : "No specific reason provided"
+        );
+
+        try {
+            // Send Kafka notification for in-app notification
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("jobPostingId", jobPosting.getId());
+            metadata.put("jobTitle", jobPosting.getTitle());
+            metadata.put("rejectionReason", jobPosting.getRejectionReason());
+            metadata.put("rejectedBy", jobPosting.getApprovedBy().getEmail());
+            metadata.put("status", jobPosting.getStatus());
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType(NotificationEvent.EventType.JOB_POSTING_REJECTED.name())
+                    .recipientId(String.valueOf(jobPosting.getRecruiter().getId()))
+                    .recipientEmail(jobPosting.getRecruiter().getAccount().getEmail())
+                    .title("Job Posting Rejected")
+                    .subject("Your Job Posting Requires Updates")
+                    .message(emailMessage)
+                    .category("JOB_POSTING_STATUS")
+                    .metadata(metadata)
+                    .priority(2) // MEDIUM priority
+                    .build();
+
+            notificationProducer.sendRecruiterNotification(event);
+            log.info("✅ Sent rejection notification to recruiter for job ID: {}", jobPosting.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send rejection notification to recruiter for job ID: {}",
+                    jobPosting.getId(), e);
+        }
+
+        // Send email notification
+        try {
+            MailBody mailBody = MailBody.builder()
+                    .to(jobPosting.getRecruiter().getAccount().getEmail())
+                    .subject("Your Job Posting Requires Updates")
+                    .text(emailMessage)
+                    .build();
+
+            emailService.sendSimpleEmail(mailBody);
+            log.info("✅ Job posting rejection email sent to recruiter for job ID: {}", jobPosting.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send job posting rejection email for job ID: {}",
+                    jobPosting.getId(), e);
+        }
+    }
+
+    private PageJobPostingForRecruiterResponse gellAllJobPostings(
+            int page, int size, String keyword, int recruiterId
+    ){
+        if(recruiterId == 0) {
+            Recruiter recruiter = getMyRecruiter();
+            recruiterId = recruiter.getId();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createAt").ascending());
+
+        Page<JobPosting> pageJobPosting;
+        if (keyword == null || keyword.isEmpty()) {
+            // Lấy tất cả
+            pageJobPosting = jobPostingRepo.findAllByRecruiterId(recruiterId, pageable);
+        } else {
+            // Lọc theo keyword (ví dụ search trong title)
+            pageJobPosting = jobPostingRepo
+                    .findByRecruiterIdAndTitleContainingIgnoreCase(recruiterId, keyword, pageable);
+        }
+
+        List<JobPostingForRecruiterResponse> jobPostingForRecruiterResponses = pageJobPosting
+                .stream()
+                .map(jobPostingMapper::toJobPostingDetailForRecruiterResponse)
+                .collect(Collectors.toList());
+
+        PageJobPostingForRecruiterResponse pageResponse = jobPostingMapper
+                .toPageJobPostingForRecruiterResponse(pageJobPosting);
+        pageResponse.setContent(jobPostingForRecruiterResponses);
+
+        return pageResponse;
+    }
+
+    @Override
+    public PageJobPostingForRecruiterResponse getAllJobPostingsPublic(
+            int page, int size, String keyword, int recruiterId
+    ) {
+        return gellAllJobPostings(
+                page, size, keyword, recruiterId
+        );
+    }
+
+    @Override
+    public JobPostingForCandidateResponse.RecruiterCompanyInfo getCompanyDetail(int recruiterId) {
+        Recruiter recruiter = recruiterRepo.findById(recruiterId)
+                .orElseThrow(() -> new AppException(ErrorCode.RECRUITER_NOT_FOUND));
+
+        return jobPostingMapper.toRecruiterCompanyInfo(recruiter);
+    }
 }

@@ -17,7 +17,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 @Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
-    ResponseEntity<ApiResponse> handlingRuntimeException(Exception exception) {
+    ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception) {
         log.error("Exception: ", exception);
         ApiResponse apiResponse = new ApiResponse();
 
