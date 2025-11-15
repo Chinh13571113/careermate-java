@@ -21,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -57,7 +58,8 @@ public class SecurityConfig {
             "api/coach/course/recommendation",
             // Public job postings endpoints - no authentication required
             "/api/job-postings",
-            "/api/job-postings/**"
+            "/api/job-postings/**",
+            "/api/jdskill/top-used"
     };
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
@@ -98,8 +100,9 @@ public class SecurityConfig {
 //                "file://*"  // Allow direct HTML file access for testing
 //        ));
         // Also allow null origin (for file:// protocol)
-        corsConfiguration.addAllowedOrigin("*");
+//        corsConfiguration.addAllowedOrigin("*");
 
+        corsConfiguration.setAllowedOriginPatterns(Collections.singletonList("*"));
         corsConfiguration.addAllowedMethod("*");
         corsConfiguration.addAllowedHeader("*");
         corsConfiguration.setAllowCredentials(true);
