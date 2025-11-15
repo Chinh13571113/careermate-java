@@ -54,7 +54,8 @@ public class SecurityConfig {
             "api/coach/course/recommendation",
             // Public job postings endpoints - no authentication required
             "/api/job-postings",
-            "/api/job-postings/**"
+            "/api/job-postings/**",
+            "/api/jdskill/top-used"
     };
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
