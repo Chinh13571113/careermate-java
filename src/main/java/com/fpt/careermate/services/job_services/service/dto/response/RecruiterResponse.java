@@ -16,4 +16,5 @@ public class RecruiterResponse {
     String companyName;
     String companyAddress;
     String logoUrl;
+    long jobCount;
 }

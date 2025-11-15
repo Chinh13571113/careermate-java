@@ -792,12 +792,18 @@ public class JobPostingImp implements JobPostingService {
         }
 
         List<Recruiter> recruiters = pageRecruiter.getContent();
+        List<RecruiterResponse> recruiterResponses = jobPostingMapper.toRecruiterResponseList(recruiters);
+        // Thêm số lượng job postings cho mỗi recruiter
+        recruiterResponses.forEach(recruiterResponse -> {
+            long jobCount = jobPostingRepo.countByRecruiterIdAndStatus(recruiterResponse.getId(), StatusJobPosting.ACTIVE);
+            recruiterResponse.setJobCount(jobCount);
+        });
 
         // Map to PageRecruiterResponse
         PageRecruiterResponse pageRecruiterResponse = jobPostingMapper.toPageRecruiterResponse(pageRecruiter);
 
         // Map to RecruiterResponse DTOs and set content
-        pageRecruiterResponse.setContent(jobPostingMapper.toRecruiterResponseList(recruiters));
+        pageRecruiterResponse.setContent(recruiterResponses);
 
         return pageRecruiterResponse;
     }
