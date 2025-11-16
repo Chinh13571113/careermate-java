@@ -1,5 +1,7 @@
 package com.fpt.careermate.services.job_services.service;
 
+import com.fpt.careermate.common.constant.StatusJobPosting;
+import com.fpt.careermate.common.constant.StatusRecruiter;
 import com.fpt.careermate.common.exception.AppException;
 import com.fpt.careermate.common.exception.ErrorCode;
 import com.fpt.careermate.common.util.CoachUtil;
@@ -99,13 +101,15 @@ public class SavedJobImp implements SavedJobService {
         return pageSavedJobPostingResponse;
     }
 
-    // Get all job postings for candidate
+    // Get all job postings for candidate (Job Tab)
     @PreAuthorize("hasRole('CANDIDATE')")
     @Override
     public PageJobPostingForCandidateResponse getJobsForCandidate(int page, int size) {
         int candidateId = coachUtil.getCurrentCandidate().getCandidateId();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createAt").descending());
-        Page<JobPosting> jobPostingPage = jobPostingRepo.findAll(pageable);
+        Page<JobPosting> jobPostingPage = jobPostingRepo.findAllByStatusAndRecruiter_VerificationStatus(
+                StatusJobPosting.ACTIVE, StatusRecruiter.APPROVED, pageable
+        );
 
         // Convert to DTO response using mapper
         List<JobPostingForCandidateResponse> jobPostingResponses = new ArrayList<>();
