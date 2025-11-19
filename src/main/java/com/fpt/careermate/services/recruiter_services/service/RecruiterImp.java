@@ -178,7 +178,8 @@ public class RecruiterImp implements RecruiterService {
     }
 
     @Override
-    public void updateOrganizationInfo(com.fpt.careermate.services.authentication_services.service.dto.request.RecruiterRegistrationRequest.OrganizationInfo orgInfo) {
+    public void updateOrganizationInfo(
+            com.fpt.careermate.services.authentication_services.service.dto.request.RecruiterRegistrationRequest.OrganizationInfo orgInfo) {
         // Get current authenticated user's account
         var currentAccount = authenticationImp.findByEmail();
 
@@ -226,7 +227,8 @@ public class RecruiterImp implements RecruiterService {
 
         recruiterRepo.save(recruiter);
 
-        log.info("Recruiter organization info updated. Account ID: {}, Status: REJECTED → PENDING", currentAccount.getId());
+        log.info("Recruiter organization info updated. Account ID: {}, Status: REJECTED → PENDING",
+                currentAccount.getId());
     }
 
     // ========== RECRUITER PROFILE MANAGEMENT ==========
@@ -505,7 +507,8 @@ public class RecruiterImp implements RecruiterService {
     /**
      * Send notification to admin when recruiter creates profile update request
      */
-    private void sendProfileUpdateRequestNotificationToAdmin(Recruiter recruiter, RecruiterProfileUpdateRequest updateRequest) {
+    private void sendProfileUpdateRequestNotificationToAdmin(Recruiter recruiter,
+            RecruiterProfileUpdateRequest updateRequest) {
         try {
             java.util.Map<String, Object> metadata = new java.util.HashMap<>();
             metadata.put("requestId", updateRequest.getId());
@@ -523,13 +526,12 @@ public class RecruiterImp implements RecruiterService {
                     .subject("Recruiter Profile Update Pending Review")
                     .message(String.format(
                             "Recruiter %s has requested to update their profile.\n\n" +
-                            "Company: %s\n" +
-                            "Email: %s\n\n" +
-                            "Please review and approve/reject this request.",
+                                    "Company: %s\n" +
+                                    "Email: %s\n\n" +
+                                    "Please review and approve/reject this request.",
                             recruiter.getAccount().getUsername(),
                             recruiter.getCompanyName(),
-                            recruiter.getAccount().getEmail()
-                    ))
+                            recruiter.getAccount().getEmail()))
                     .category("ADMIN_ACTION_REQUIRED")
                     .metadata(metadata)
                     .priority(2) // MEDIUM priority
@@ -546,18 +548,18 @@ public class RecruiterImp implements RecruiterService {
     /**
      * Send notification to recruiter when profile update is approved
      */
-    private void sendProfileUpdateApprovedNotification(Recruiter recruiter, RecruiterProfileUpdateRequest request, String adminNote) {
+    private void sendProfileUpdateApprovedNotification(Recruiter recruiter, RecruiterProfileUpdateRequest request,
+            String adminNote) {
         String emailMessage = String.format(
                 "Good news! Your profile update request has been approved.\n\n" +
-                "Your profile has been updated with the new information.\n\n" +
-                "%s" +
-                "Thank you for keeping your profile up to date.\n\n" +
-                "Best regards,\n" +
-                "CareerMate Team",
+                        "Your profile has been updated with the new information.\n\n" +
+                        "%s" +
+                        "Thank you for keeping your profile up to date.\n\n" +
+                        "Best regards,\n" +
+                        "CareerMate Team",
                 (adminNote != null && !adminNote.trim().isEmpty())
                         ? "Admin Note: " + adminNote + "\n\n"
-                        : ""
-        );
+                        : "");
 
         try {
             // Send Kafka notification for in-app notification
@@ -570,7 +572,7 @@ public class RecruiterImp implements RecruiterService {
 
             NotificationEvent event = NotificationEvent.builder()
                     .eventType(NotificationEvent.EventType.PROFILE_UPDATE_APPROVED.name())
-                    .recipientId(String.valueOf(recruiter.getId()))
+                    .recipientId(recruiter.getAccount().getEmail()) // Use email for SSE
                     .recipientEmail(recruiter.getAccount().getEmail())
                     .title("Profile Update Approved")
                     .subject("Your Profile Update Request Has Been Approved")
@@ -606,16 +608,16 @@ public class RecruiterImp implements RecruiterService {
     /**
      * Send notification to recruiter when profile update is rejected
      */
-    private void sendProfileUpdateRejectedNotification(Recruiter recruiter, RecruiterProfileUpdateRequest request, String rejectionReason) {
+    private void sendProfileUpdateRejectedNotification(Recruiter recruiter, RecruiterProfileUpdateRequest request,
+            String rejectionReason) {
         String emailMessage = String.format(
                 "We regret to inform you that your profile update request could not be approved.\n\n" +
-                "Reason: %s\n\n" +
-                "You can submit a new update request after addressing the issues mentioned above.\n\n" +
-                "If you have any questions, please contact our support team.\n\n" +
-                "Best regards,\n" +
-                "CareerMate Team",
-                rejectionReason != null ? rejectionReason : "No specific reason provided"
-        );
+                        "Reason: %s\n\n" +
+                        "You can submit a new update request after addressing the issues mentioned above.\n\n" +
+                        "If you have any questions, please contact our support team.\n\n" +
+                        "Best regards,\n" +
+                        "CareerMate Team",
+                rejectionReason != null ? rejectionReason : "No specific reason provided");
 
         try {
             // Send Kafka notification for in-app notification
@@ -628,7 +630,7 @@ public class RecruiterImp implements RecruiterService {
 
             NotificationEvent event = NotificationEvent.builder()
                     .eventType(NotificationEvent.EventType.PROFILE_UPDATE_REJECTED.name())
-                    .recipientId(String.valueOf(recruiter.getId()))
+                    .recipientId(recruiter.getAccount().getEmail()) // Use email for SSE
                     .recipientEmail(recruiter.getAccount().getEmail())
                     .title("Profile Update Rejected")
                     .subject("Your Profile Update Request Requires Changes")
@@ -662,5 +664,3 @@ public class RecruiterImp implements RecruiterService {
     }
 
 }
-
-

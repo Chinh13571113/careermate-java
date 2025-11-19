@@ -376,7 +376,7 @@ public class JobPostingImp implements JobPostingService {
     @Transactional
     @Override
     public void approveOrRejectJobPosting(int id,
-                                          JobPostingApprovalRequest request) {
+            JobPostingApprovalRequest request) {
         log.info("Admin processing approval/rejection for job posting ID: {}", id);
 
         // Get job posting
@@ -643,7 +643,7 @@ public class JobPostingImp implements JobPostingService {
 
             NotificationEvent event = NotificationEvent.builder()
                     .eventType(NotificationEvent.EventType.JOB_POSTING_APPROVED.name())
-                    .recipientId(String.valueOf(jobPosting.getRecruiter().getId()))
+                    .recipientId(jobPosting.getRecruiter().getAccount().getEmail()) // Use email for SSE
                     .recipientEmail(jobPosting.getRecruiter().getAccount().getEmail())
                     .title("Job Posting Approved")
                     .subject("Your Job Posting Has Been Approved")
@@ -703,7 +703,7 @@ public class JobPostingImp implements JobPostingService {
 
             NotificationEvent event = NotificationEvent.builder()
                     .eventType(NotificationEvent.EventType.JOB_POSTING_REJECTED.name())
-                    .recipientId(String.valueOf(jobPosting.getRecruiter().getId()))
+                    .recipientId(jobPosting.getRecruiter().getAccount().getEmail()) // Use email for SSE
                     .recipientEmail(jobPosting.getRecruiter().getAccount().getEmail())
                     .title("Job Posting Rejected")
                     .subject("Your Job Posting Requires Updates")
