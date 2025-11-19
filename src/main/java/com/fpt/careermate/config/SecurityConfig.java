@@ -31,9 +31,9 @@ public class SecurityConfig {
 
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     public String[] PUBLIC_ENDPOINTS = {
-            "/api/users", "/api/auth/token","/api/auth/token/candidate", "/api/auth/introspect", "/api/auth/logout",
+            "/api/users", "/api/auth/token", "/api/auth/token/candidate", "/api/auth/introspect", "/api/auth/logout",
             "/api/auth" +
-            "/refresh",
+                    "/refresh",
             "/api/users/verify-email/**",
             "/api/users/verify-otp",
             "/api/users/change-password/**",
@@ -93,18 +93,10 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-        // Allow localhost, 127.0.0.1, file:// protocol, and Next.js frontend
-//        corsConfiguration.setAllowedOriginPatterns(Arrays.asList(
-//                "http://localhost:*",
-//                "http://127.0.0.1:*",
-//                "https://localhost:*",
-//                "https://127.0.0.1:*",
-//                "file://*"  // Allow direct HTML file access for testing
-//        ));
-        // Also allow null origin (for file:// protocol)
-        corsConfiguration.addAllowedOrigin("*");
-
+        // Use allowedOriginPatterns instead of allowedOrigins when allowCredentials is
+        // true
         corsConfiguration.setAllowedOriginPatterns(Collections.singletonList("*"));
+
         corsConfiguration.addAllowedMethod("*");
         corsConfiguration.addAllowedHeader("*");
         corsConfiguration.setAllowCredentials(true);

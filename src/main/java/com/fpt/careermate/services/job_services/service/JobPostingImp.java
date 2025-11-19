@@ -638,7 +638,7 @@ public class JobPostingImp implements JobPostingService {
 
             NotificationEvent event = NotificationEvent.builder()
                     .eventType(NotificationEvent.EventType.JOB_POSTING_APPROVED.name())
-                    .recipientId(String.valueOf(jobPosting.getRecruiter().getId()))
+                    .recipientId(jobPosting.getRecruiter().getAccount().getEmail()) // Use email for SSE
                     .recipientEmail(jobPosting.getRecruiter().getAccount().getEmail())
                     .title("Job Posting Approved")
                     .subject("Your Job Posting Has Been Approved")
@@ -698,7 +698,7 @@ public class JobPostingImp implements JobPostingService {
 
             NotificationEvent event = NotificationEvent.builder()
                     .eventType(NotificationEvent.EventType.JOB_POSTING_REJECTED.name())
-                    .recipientId(String.valueOf(jobPosting.getRecruiter().getId()))
+                    .recipientId(jobPosting.getRecruiter().getAccount().getEmail()) // Use email for SSE
                     .recipientEmail(jobPosting.getRecruiter().getAccount().getEmail())
                     .title("Job Posting Rejected")
                     .subject("Your Job Posting Requires Updates")
@@ -781,23 +781,22 @@ public class JobPostingImp implements JobPostingService {
     public PageRecruiterResponse getCompanies(int page, int size, String companyAddress) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("companyName").ascending());
         Page<Recruiter> pageRecruiter = null;
-        // Logic nếu CompanyAddress có giá trị thì lọc theo địa chỉ, nếu không thì lấy tất cả
-        if(companyAddress == null || companyAddress.isEmpty()) {
+        // Logic nếu CompanyAddress có giá trị thì lọc theo địa chỉ, nếu không thì lấy
+        // tất cả
+        if (companyAddress == null || companyAddress.isEmpty()) {
             pageRecruiter = recruiterRepo.findAllByVerificationStatus(
-                            StatusRecruiter.APPROVED, pageable
-            );
-        }
-        else {
+                    StatusRecruiter.APPROVED, pageable);
+        } else {
             pageRecruiter = recruiterRepo.findAllByVerificationStatusAndCompanyAddressContainingIgnoreCase(
-                            StatusRecruiter.APPROVED, companyAddress, pageable
-            );
+                    StatusRecruiter.APPROVED, companyAddress, pageable);
         }
 
         List<Recruiter> recruiters = pageRecruiter.getContent();
         List<RecruiterResponse> recruiterResponses = jobPostingMapper.toRecruiterResponseList(recruiters);
         // Thêm số lượng job postings cho mỗi recruiter
         recruiterResponses.forEach(recruiterResponse -> {
-            long jobCount = jobPostingRepo.countByRecruiterIdAndStatus(recruiterResponse.getId(), StatusJobPosting.ACTIVE);
+            long jobCount = jobPostingRepo.countByRecruiterIdAndStatus(recruiterResponse.getId(),
+                    StatusJobPosting.ACTIVE);
             recruiterResponse.setJobCount(jobCount);
         });
 
@@ -821,8 +820,7 @@ public class JobPostingImp implements JobPostingService {
         List<String> addresses = recruiterRepo.findDistinctCompanyAddressByKeyword(
                 StatusRecruiter.APPROVED,
                 searchKeyword,
-                pageable
-        );
+                pageable);
 
         return addresses;
     }
