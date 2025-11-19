@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerMate - Real-Time Notifications Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status.disconnected {
+            background: #fee;
+            color: #c00;
+        }
+        
+        .status.connected {
+            background: #efe;
+            color: #0a0;
+        }
+        
+        .status.connecting {
+            background: #ffe;
+            color: #f80;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status.disconnected .status-dot {
+            background: #c00;
+        }
+        
+        .status.connected .status-dot {
+            background: #0a0;
+        }
+        
+        .status.connecting .status-dot {
+            background: #f80;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .stats {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .notifications {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .notification-item {
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            background: #f7fafc;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .notification-time {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        .notification-message {
+            color: #4a5568;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .notification-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .badge.priority-1 {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .badge.priority-2 {
+            background: #feebc8;
+            color: #c05621;
+        }
+        
+        .badge.priority-3 {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 CareerMate - Real-Time Notifications</h1>
+            <p style="color: #718096; margin-bottom: 15px;">Test Server-Sent Events (SSE) notification streaming</p>
+            <div id="connection-status" class="status disconnected">
+                <span class="status-dot"></span>
+                <span>Disconnected</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="form-group">
+                <label for="jwt-token">JWT Bearer Token</label>
+                <input 
+                    type="text" 
+                    id="jwt-token" 
+                    placeholder="Paste your JWT token here (from /api/auth/login)"
+                    value="">
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="connect-btn" class="btn-primary">Connect to SSE Stream</button>
+                <button id="disconnect-btn" class="btn-danger" disabled>Disconnect</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <h3 style="margin-bottom: 10px;">📊 Statistics</h3>
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="unread-count">0</div>
+                    <div class="stat-label">Unread Notifications</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-received">0</div>
+                    <div class="stat-label">Notifications Received</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="connection-time">-</div>
+                    <div class="stat-label">Connection Time</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="notifications">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>📬 Live Notifications</h3>
+                <button onclick="clearNotifications()" style="padding: 5px 15px;">Clear</button>
+            </div>
+            <div id="notifications-list">
+                <div class="empty-state">
+                    <p>No notifications yet. Connect to the SSE stream to receive real-time notifications.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let eventSource = null;
+        let totalReceived = 0;
+        let connectionStartTime = null;
+        let connectionTimeInterval = null;
+        
+        const API_BASE = 'http://localhost:8080';
+        
+        // Update connection status
+        function updateStatus(status, message) {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.className = `status ${status}`;
+            statusEl.innerHTML = `<span class="status-dot"></span><span>${message}</span>`;
+        }
+        
+        // Format time difference
+        function formatTimeDiff(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) return `${hours}h ${minutes % 60}m`;
+            if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+            return `${seconds}s`;
+        }
+        
+        // Update connection time
+        function updateConnectionTime() {
+            if (connectionStartTime) {
+                const diff = Date.now() - connectionStartTime;
+                document.getElementById('connection-time').textContent = formatTimeDiff(diff);
+            }
+        }
+        
+        // Connect to SSE
+        document.getElementById('connect-btn').addEventListener('click', () => {
+            const token = document.getElementById('jwt-token').value.trim();
+            
+            if (!token) {
+                alert('Please enter your JWT token');
+                return;
+            }
+            
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            updateStatus('connecting', 'Connecting...');
+            
+            // Create SSE connection with custom headers (Note: EventSource doesn't support headers natively)
+            // For production, use a library like https://github.com/EventSource/eventsource
+            // For testing, we'll use fetch with ReadableStream
+            
+            const url = `${API_BASE}/api/notifications/stream`;
+            
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'text/event-stream'
+                }
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                updateStatus('connected', 'Connected');
+                connectionStartTime = Date.now();
+                connectionTimeInterval = setInterval(updateConnectionTime, 1000);
+                
+                document.getElementById('connect-btn').disabled = true;
+                document.getElementById('disconnect-btn').disabled = false;
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                function readStream() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            console.log('Stream closed');
+                            handleDisconnect();
+                            return;
+                        }
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const events = buffer.split('\n\n');
+                        buffer = events.pop(); // Keep incomplete event in buffer
+                        
+                        events.forEach(eventText => {
+                            if (!eventText.trim()) return;
+                            
+                            const lines = eventText.split('\n');
+                            const event = {};
+                            
+                            lines.forEach(line => {
+                                if (line.startsWith('event:')) {
+                                    event.type = line.substring(6).trim();
+                                } else if (line.startsWith('data:')) {
+                                    event.data = line.substring(5).trim();
+                                }
+                            });
+                            
+                            handleSSEEvent(event);
+                        });
+                        
+                        readStream();
+                    }).catch(error => {
+                        console.error('Stream error:', error);
+                        handleDisconnect();
+                    });
+                }
+                
+                readStream();
+            }).catch(error => {
+                console.error('Connection error:', error);
+                alert(`Failed to connect: ${error.message}`);
+                handleDisconnect();
+            });
+        });
+        
+        // Handle SSE events
+        function handleSSEEvent(event) {
+            console.log('SSE Event:', event);
+            
+            switch(event.type) {
+                case 'connected':
+                    const data = JSON.parse(event.data);
+                    console.log('✅ Connected:', data);
+                    break;
+                    
+                case 'notification':
+                    const notification = JSON.parse(event.data);
+                    addNotification(notification);
+                    totalReceived++;
+                    document.getElementById('total-received').textContent = totalReceived;
+                    
+                    // Show browser notification
+                    if (Notification.permission === 'granted') {
+                        new Notification(notification.title, {
+                            body: notification.message,
+                            icon: '🔔'
+                        });
+                    }
+                    break;
+                    
+                case 'unread-count':
+                    const countData = JSON.parse(event.data);
+                    document.getElementById('unread-count').textContent = countData.count;
+                    break;
+                    
+                case 'keepalive':
+                    console.log('💓 Keepalive ping');
+                    break;
+            }
+        }
+        
+        // Add notification to UI
+        function addNotification(notification) {
+            const listEl = document.getElementById('notifications-list');
+            
+            // Remove empty state
+            const emptyState = listEl.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const priorityClass = `priority-${notification.priority || 3}`;
+            const priorityLabel = notification.priority === 1 ? 'HIGH' : notification.priority === 2 ? 'MEDIUM' : 'LOW';
+            
+            const notifEl = document.createElement('div');
+            notifEl.className = 'notification-item';
+            notifEl.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">${notification.title}</div>
+                    <div class="notification-time">${new Date().toLocaleTimeString()}</div>
+                </div>
+                <div class="notification-message">${notification.message}</div>
+                <div class="notification-meta">
+                    <span class="badge ${priorityClass}">${priorityLabel}</span>
+                    <span class="badge" style="background: #bee3f8; color: #2c5282;">${notification.eventType}</span>
+                </div>
+            `;
+            
+            listEl.insertBefore(notifEl, listEl.firstChild);
+        }
+        
+        // Disconnect
+        function handleDisconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            
+            updateStatus('disconnected', 'Disconnected');
+            
+            if (connectionTimeInterval) {
+                clearInterval(connectionTimeInterval);
+                connectionTimeInterval = null;
+            }
+            
+            connectionStartTime = null;
+            document.getElementById('connection-time').textContent = '-';
+            document.getElementById('connect-btn').disabled = false;
+            document.getElementById('disconnect-btn').disabled = true;
+        }
+        
+        document.getElementById('disconnect-btn').addEventListener('click', handleDisconnect);
+        
+        // Clear notifications
+        function clearNotifications() {
+            const listEl = document.getElementById('notifications-list');
+            listEl.innerHTML = '<div class="empty-state"><p>No notifications yet.</p></div>';
+            totalReceived = 0;
+            document.getElementById('total-received').textContent = '0';
+        }
+        
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>
