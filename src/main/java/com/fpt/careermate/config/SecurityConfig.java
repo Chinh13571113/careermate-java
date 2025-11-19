@@ -93,8 +93,17 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-        // Use allowedOriginPatterns instead of allowedOrigins when allowCredentials is
-        // true
+        // Allow localhost, 127.0.0.1, file:// protocol, and Next.js frontend
+//        corsConfiguration.setAllowedOriginPatterns(Arrays.asList(
+//                "http://localhost:*",
+//                "http://127.0.0.1:*",
+//                "https://localhost:*",
+//                "https://127.0.0.1:*",
+//                "file://*"  // Allow direct HTML file access for testing
+//        ));
+        // Also allow null origin (for file:// protocol)
+//        corsConfiguration.addAllowedOrigin("*");
+
         corsConfiguration.setAllowedOriginPatterns(Collections.singletonList("*"));
 
         corsConfiguration.addAllowedMethod("*");

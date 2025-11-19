@@ -2,10 +2,13 @@ package com.fpt.careermate.services.job_services.service;
 
 import com.fpt.careermate.common.constant.StatusJobPosting;
 import com.fpt.careermate.common.constant.StatusRecruiter;
+import com.fpt.careermate.common.util.CoachUtil;
 import com.fpt.careermate.services.authentication_services.service.AuthenticationImp;
+import com.fpt.careermate.services.job_services.domain.SavedJob;
 import com.fpt.careermate.services.job_services.repository.JdSkillRepo;
 import com.fpt.careermate.services.job_services.repository.JobDescriptionRepo;
 import com.fpt.careermate.services.job_services.repository.JobPostingRepo;
+import com.fpt.careermate.services.job_services.repository.SavedJobRepo;
 import com.fpt.careermate.services.job_services.service.dto.response.*;
 import com.fpt.careermate.services.profile_services.domain.WorkModel;
 import com.fpt.careermate.services.profile_services.repository.WorkModelRepo;
@@ -74,6 +77,8 @@ public class JobPostingImp implements JobPostingService {
     WeaviateImp weaviateImp;
     EmailService emailService;
     NotificationProducer notificationProducer;
+    SavedJobRepo savedJobRepo;
+    CoachUtil coachUtil;
 
     // Recruiter create job posting
     @PreAuthorize("hasRole('RECRUITER')")
@@ -754,6 +759,24 @@ public class JobPostingImp implements JobPostingService {
                 .stream()
                 .map(jobPostingMapper::toJobPostingDetailForRecruiterResponse)
                 .collect(Collectors.toList());
+
+        // Thêm skills
+        jobPostingForRecruiterResponses.forEach(jobPostingForRecruiterResponse -> {
+            Set<JobPostingSkillResponse> skills = new HashSet<>();
+            pageJobPosting.getContent().forEach(jobPostingContent -> {
+                jobPostingContent.getJobDescriptions().forEach(jobDescription -> {
+                    if (jobPostingForRecruiterResponse.getId() == jobPostingContent.getId()) {
+                        skills.add(
+                                JobPostingSkillResponse.builder()
+                                        .id(jobDescription.getJdSkill().getId())
+                                        .name(jobDescription.getJdSkill().getName())
+                                        .mustToHave(jobDescription.isMustToHave())
+                                        .build());
+                    }
+                });
+            });
+            jobPostingForRecruiterResponse.setSkills(skills);
+        });
 
         PageJobPostingForRecruiterResponse pageResponse = jobPostingMapper
                 .toPageJobPostingForRecruiterResponse(pageJobPosting);
