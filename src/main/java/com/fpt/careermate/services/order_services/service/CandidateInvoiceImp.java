@@ -10,7 +10,7 @@ import com.fpt.careermate.services.order_services.domain.CandidatePackage;
 import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
 import com.fpt.careermate.services.order_services.repository.CandidateInvoiceRepo;
 import com.fpt.careermate.services.order_services.repository.CandidatePackageRepo;
-import com.fpt.careermate.services.order_services.service.impl.OrderService;
+import com.fpt.careermate.services.order_services.service.impl.CandidateInvoiceService;
 import com.fpt.careermate.services.order_services.service.mapper.OrderMapper;
 import com.fpt.careermate.common.exception.AppException;
 import com.fpt.careermate.common.exception.ErrorCode;
@@ -20,7 +20,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -29,7 +28,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class CandidateInvoiceImp implements OrderService {
+public class CandidateInvoiceImp implements CandidateInvoiceService {
 
     CandidateInvoiceRepo candidateInvoiceRepo;
     CandidatePackageRepo candidatePackageRepo;
@@ -37,8 +36,8 @@ public class CandidateInvoiceImp implements OrderService {
     OrderMapper orderMapper;
     AuthenticationImp authenticationImp;
 
-    @Transactional
-    public void createOrder(String packageName, Candidate currentCandidate) {
+//    @Transactional
+    public void createInvoice(String packageName, Candidate currentCandidate) {
         CandidatePackage pkg = candidatePackageRepo.findByName(packageName);
 
         CandidateInvoice candidateInvoice = new CandidateInvoice();
@@ -46,7 +45,6 @@ public class CandidateInvoiceImp implements OrderService {
         candidateInvoice.setCandidatePackage(pkg);
         candidateInvoice.setAmount(pkg.getPrice());
         candidateInvoice.setStatus(StatusInvoice.PAID);
-        candidateInvoice.setCreateAt(LocalDate.now());
         candidateInvoice.setActive(true);
         candidateInvoice.setStartDate(LocalDate.now());
         candidateInvoice.setEndDate(LocalDate.now().plusDays(pkg.getDurationDays()));
@@ -96,7 +94,6 @@ public class CandidateInvoiceImp implements OrderService {
         exstingCandidateInvoice.setCandidatePackage(pkg);
         exstingCandidateInvoice.setAmount(pkg.getPrice());
         exstingCandidateInvoice.setStatus(StatusInvoice.PAID);
-        exstingCandidateInvoice.setCreateAt(LocalDate.now());
         exstingCandidateInvoice.setActive(true);
         exstingCandidateInvoice.setStartDate(LocalDate.now());
         exstingCandidateInvoice.setEndDate(LocalDate.now().plusDays(pkg.getDurationDays()));

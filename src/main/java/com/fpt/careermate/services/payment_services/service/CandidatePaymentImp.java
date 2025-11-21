@@ -74,7 +74,7 @@ public class CandidatePaymentImp implements CandidatePaymentService {
         Map<String, String> vnpParams = new HashMap<>();
         vnpParams.put("vnp_Version", vnp_Version);
         vnpParams.put("vnp_Command", vnp_Command);
-        vnpParams.put("vnp_TmnCode", paymentConfig.vnp_TmnCode);
+        vnpParams.put("vnp_TmnCode", paymentConfig.vnp_TmnCode.trim());
         vnpParams.put("vnp_Amount", String.valueOf(vnpAmount));
         vnpParams.put("vnp_CurrCode", "VND");
         if (bankCode != null && !bankCode.isEmpty()) vnpParams.put("vnp_BankCode", bankCode);
@@ -82,7 +82,7 @@ public class CandidatePaymentImp implements CandidatePaymentService {
         vnpParams.put("vnp_OrderInfo", "CandidateInvoice payment:" + vnp_TxnRef);
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", (language == null || language.isEmpty()) ? "vn" : language);
-        vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_ReturnUrl);
+        vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_ReturnUrl.trim());
         vnpParams.put("vnp_IpAddr", vnp_IpAddr);
         vnpParams.put("vnp_CreateDate", paymentUtil.nowFormatted());
         vnpParams.put("vnp_ExpireDate", paymentUtil.expireDateFormatted(15));
@@ -92,7 +92,7 @@ public class CandidatePaymentImp implements CandidatePaymentService {
         String hashData = paymentUtil.buildHashDataSorted(vnpParams);
         String query = paymentUtil.buildQueryString(vnpParams);
 
-        String secureHash = paymentUtil.hmacSHA512(paymentConfig.secretKey, hashData);
+        String secureHash = paymentUtil.hmacSHA512(paymentConfig.secretKey.trim(), hashData);
         query += "&vnp_SecureHash=" + secureHash;
 
         return paymentConfig.vnp_PayUrl + "?" + query;
@@ -177,7 +177,7 @@ public class CandidatePaymentImp implements CandidatePaymentService {
         // Nếu không tìm thấy candidateInvoice thì là Free package
         if(candidate.getCandidateInvoice() == null) {
             // Tạo CandidateInvoice mới
-            candidateInvoiceImp.createOrder(packageName, candidate);
+            candidateInvoiceImp.createInvoice(packageName, candidate);
         }
         else {
             // Cập nhật CandidateInvoice

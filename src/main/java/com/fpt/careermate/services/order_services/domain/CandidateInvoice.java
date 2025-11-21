@@ -23,7 +23,6 @@ public class CandidateInvoice {
     String status;
     LocalDate startDate;
     LocalDate endDate;
-    LocalDate createAt;
     LocalDate cancelledAt;
 
     @ManyToOne
