@@ -1,6 +1,5 @@
 package com.fpt.careermate.services.order_services.repository;
 
-import com.fpt.careermate.services.order_services.domain.Invoice;
 import com.fpt.careermate.services.order_services.domain.RecruiterInvoice;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

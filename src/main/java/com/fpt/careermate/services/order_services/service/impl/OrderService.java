@@ -9,6 +9,5 @@ import java.util.List;
 
 public interface OrderService {
     void cancelOrder(int id);
-    PageCandidateOrderResponse getOrderList(int page, int size);
     MyCandidateOrderResponse myCandidatePackage();
 }

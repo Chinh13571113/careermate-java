@@ -9,13 +9,11 @@ import com.fpt.careermate.common.util.PaymentUtil;
 import com.fpt.careermate.config.PaymentConfig;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.account_services.repository.AccountRepo;
-import com.fpt.careermate.services.order_services.domain.Invoice;
 import com.fpt.careermate.services.order_services.domain.RecruiterInvoice;
 import com.fpt.careermate.services.order_services.domain.RecruiterPackage;
 import com.fpt.careermate.services.order_services.repository.RecruiterInvoiceRepo;
 import com.fpt.careermate.services.order_services.service.RecruiterInvoiceImp;
 import com.fpt.careermate.services.payment_services.service.impl.RecruiterPaymentService;
-import com.fpt.careermate.services.profile_services.domain.Candidate;
 import com.fpt.careermate.services.recruiter_services.domain.Recruiter;
 import com.fpt.careermate.services.recruiter_services.repository.RecruiterRepo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -83,7 +81,7 @@ public class RecruiterPaymentImp implements RecruiterPaymentService {
         vnpParams.put("vnp_CurrCode", "VND");
         if (bankCode != null && !bankCode.isEmpty()) vnpParams.put("vnp_BankCode", bankCode);
         vnpParams.put("vnp_TxnRef", vnp_TxnRef);
-        vnpParams.put("vnp_OrderInfo", "Invoice payment:" + vnp_TxnRef);
+        vnpParams.put("vnp_OrderInfo", "CandidateInvoice payment:" + vnp_TxnRef);
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", (language == null || language.isEmpty()) ? "vn" : language);
         vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_RecruiterReturnUrl);
@@ -178,14 +176,14 @@ public class RecruiterPaymentImp implements RecruiterPaymentService {
         Optional<Recruiter> exstingRecruiter = recruiterRepo.findByAccount_Id(exstingAccount.get().getId());
         Recruiter recruiter = exstingRecruiter.get();
 
-        // Nếu không tìm thấy invoice thì là Free package
+        // Nếu không tìm thấy candidateInvoice thì là Free package
         if(recruiter.getRecruiterInvoice() == null) {
-            // Tạo Invoice mới
+            // Tạo CandidateInvoice mới
             recruiterInvoiceImp.creatInvoice(packageName, recruiter);
         }
         else {
-            // Cập nhật Invoice
-            // Tìm invoice từ DB
+            // Cập nhật CandidateInvoice
+            // Tìm candidateInvoice từ DB
             RecruiterInvoice exstingInvoice = recruiter.getRecruiterInvoice();
             // Cập nhật trạng thái và các thông tin liên quan bằng việc gọi updateRecruiterInvoice method
             recruiterInvoiceImp.updateRecruiterInvoice(exstingInvoice, packageName);

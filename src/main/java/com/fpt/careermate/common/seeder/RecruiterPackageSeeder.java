@@ -133,7 +133,7 @@ public class RecruiterPackageSeeder implements CommandLineRunner {
     private void seedRecruiterEntitlementPackages() {
         LocalDateTime now = LocalDateTime.now();
         if (recruiterEntitlementPackageRepo.count() == 0) {
-            log.info("🌱 Seeding Recruiter Entitlement-Package Mappings...");
+            log.info("🌱 Seeding Recruiter CandidateEntitlement-Package Mappings...");
 
             var basic = recruiterPackageRepo.findByName(RecruiterPackageCode.BASIC);
             var professional = recruiterPackageRepo.findByName(RecruiterPackageCode.PROFESSIONAL);

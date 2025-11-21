@@ -1,7 +1,6 @@
 package com.fpt.careermate.services.payment_services.web.rest;
 
 import com.fpt.careermate.common.response.ApiResponse;
-import com.fpt.careermate.services.payment_services.service.PaymentImp;
 import com.fpt.careermate.services.payment_services.service.RecruiterPaymentImp;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

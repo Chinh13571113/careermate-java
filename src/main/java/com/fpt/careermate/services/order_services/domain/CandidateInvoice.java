@@ -13,8 +13,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "invoice")
-public class Invoice {
+@Entity(name = "candidate_invoice")
+public class CandidateInvoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;

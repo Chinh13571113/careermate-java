@@ -82,7 +82,7 @@ vnpay:
   secret-key: ${vnp_HashSecret:default}
   pay-url: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
   api-url: "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction"
-  return-url: "http://localhost:8080/api/payment/return"
+  return-url: "http://localhost:8080/api/candidate-payment/return"
   recruiter-return-url: "http://localhost:8080/api/recruiter-payment/return"
 
 # Firebase config

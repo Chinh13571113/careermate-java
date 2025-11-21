@@ -13,9 +13,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Validated
-@Tag(name = "Recruiter - Invoice", description = "Manage recruiter invoice")
+@Tag(name = "Recruiter - CandidateInvoice", description = "Manage recruiter candidateInvoice")
 @RestController
-@RequestMapping("/api/recruiter-invoice")
+@RequestMapping("/api/recruiter-candidateInvoice")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
@@ -25,7 +25,7 @@ public class RecruiterInvoiceController {
 
     @Operation(summary = """
             Cancel recruiter package by id
-            input: invoice id
+            input: candidateInvoice id
             output: success message
             """)
     @DeleteMapping("/{id}")

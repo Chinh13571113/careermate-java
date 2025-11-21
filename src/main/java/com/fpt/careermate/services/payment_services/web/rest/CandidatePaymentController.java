@@ -1,6 +1,6 @@
 package com.fpt.careermate.services.payment_services.web.rest;
 
-import com.fpt.careermate.services.payment_services.service.PaymentImp;
+import com.fpt.careermate.services.payment_services.service.CandidatePaymentImp;
 import com.fpt.careermate.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,15 +12,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Payment", description = "Manage payment")
+@Tag(name = "Candidate - Payment", description = "Manage candidate payment")
 @RestController
-@RequestMapping("/api/payment")
+@RequestMapping("/api/candidate-payment")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class PaymentController {
+public class CandidatePaymentController {
 
-    private final PaymentImp paymentImp;
+    CandidatePaymentImp candidatePaymentImp;
 
     @Operation(summary = """
             Call GET /order/active API to check if candidate has an active order.
@@ -32,7 +32,7 @@ public class PaymentController {
     public ApiResponse<String> createPayment(
             @RequestParam String packageName,
             HttpServletRequest httpServletRequest) {
-        String paymentUrl = paymentImp.createPaymentUrl(httpServletRequest, packageName);
+        String paymentUrl = candidatePaymentImp.createPaymentUrl(httpServletRequest, packageName);
 
         return ApiResponse.<String>builder()
                 .result(paymentUrl)
@@ -45,7 +45,7 @@ public class PaymentController {
     @GetMapping("/return")
     public ApiResponse<String> paymentReturn(HttpServletRequest httpServletRequest, Model model){
         return ApiResponse.<String>builder()
-                .result(paymentImp.paymentReturn(httpServletRequest, model))
+                .result(candidatePaymentImp.paymentReturn(httpServletRequest, model))
                 .code(200)
                 .build();
     }
