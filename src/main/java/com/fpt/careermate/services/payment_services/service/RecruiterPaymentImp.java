@@ -76,7 +76,7 @@ public class RecruiterPaymentImp implements RecruiterPaymentService {
         Map<String, String> vnpParams = new HashMap<>();
         vnpParams.put("vnp_Version", vnp_Version);
         vnpParams.put("vnp_Command", vnp_Command);
-        vnpParams.put("vnp_TmnCode", paymentConfig.vnp_TmnCode);
+        vnpParams.put("vnp_TmnCode", paymentConfig.vnp_TmnCode.trim());
         vnpParams.put("vnp_Amount", String.valueOf(vnpAmount));
         vnpParams.put("vnp_CurrCode", "VND");
         if (bankCode != null && !bankCode.isEmpty()) vnpParams.put("vnp_BankCode", bankCode);
@@ -84,7 +84,7 @@ public class RecruiterPaymentImp implements RecruiterPaymentService {
         vnpParams.put("vnp_OrderInfo", "CandidateInvoice payment:" + vnp_TxnRef);
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", (language == null || language.isEmpty()) ? "vn" : language);
-        vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_RecruiterReturnUrl);
+        vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_RecruiterReturnUrl.trim());
         vnpParams.put("vnp_IpAddr", vnp_IpAddr);
         vnpParams.put("vnp_CreateDate", paymentUtil.nowFormatted());
         vnpParams.put("vnp_ExpireDate", paymentUtil.expireDateFormatted(15));
@@ -94,7 +94,7 @@ public class RecruiterPaymentImp implements RecruiterPaymentService {
         String hashData = paymentUtil.buildHashDataSorted(vnpParams);
         String query = paymentUtil.buildQueryString(vnpParams);
 
-        String secureHash = paymentUtil.hmacSHA512(paymentConfig.secretKey, hashData);
+        String secureHash = paymentUtil.hmacSHA512(paymentConfig.secretKey.trim(), hashData);
         query += "&vnp_SecureHash=" + secureHash;
 
         return paymentConfig.vnp_PayUrl + "?" + query;
@@ -168,7 +168,7 @@ public class RecruiterPaymentImp implements RecruiterPaymentService {
         }
         String packageName = paymentUtil.parsePackageNameFromOrderInfo(vnpOrderInfo);
 
-        // Lấy currentCandidate
+        // Lấy currentRecruiter
         Optional<Account> exstingAccount = accountRepo.findByEmail(email);
         if(exstingAccount.isEmpty()){
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
@@ -176,14 +176,14 @@ public class RecruiterPaymentImp implements RecruiterPaymentService {
         Optional<Recruiter> exstingRecruiter = recruiterRepo.findByAccount_Id(exstingAccount.get().getId());
         Recruiter recruiter = exstingRecruiter.get();
 
-        // Nếu không tìm thấy candidateInvoice thì là Free package
+        // Nếu không tìm thấy recuiter infoce thì là BASIC package
         if(recruiter.getRecruiterInvoice() == null) {
-            // Tạo CandidateInvoice mới
+            // Tạo RecruiterInvoice mới
             recruiterInvoiceImp.creatInvoice(packageName, recruiter);
         }
         else {
-            // Cập nhật CandidateInvoice
-            // Tìm candidateInvoice từ DB
+            // Cập nhật RecruiterInvoice
+            // Tìm RecruiterInvoice từ DB
             RecruiterInvoice exstingInvoice = recruiter.getRecruiterInvoice();
             // Cập nhật trạng thái và các thông tin liên quan bằng việc gọi updateRecruiterInvoice method
             recruiterInvoiceImp.updateRecruiterInvoice(exstingInvoice, packageName);

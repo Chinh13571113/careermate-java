@@ -13,9 +13,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Validated
-@Tag(name = "Recruiter - CandidateInvoice", description = "Manage recruiter candidateInvoice")
+@Tag(name = "Recruiter - Invoice", description = "Manage recruiter candidateInvoice")
 @RestController
-@RequestMapping("/api/recruiter-candidateInvoice")
+@RequestMapping("/api/recruiter-invoice")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
@@ -25,11 +25,11 @@ public class RecruiterInvoiceController {
 
     @Operation(summary = """
             Cancel recruiter package by id
-            input: candidateInvoice id
+            input: recruiter invoice id
             output: success message
             """)
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> cancelOrder(@Positive @PathVariable int id) {
+    public ApiResponse<Void> cancelInvoice(@Positive @PathVariable int id) {
         recruiterInvoiceImp.cancelInvoice(id);
         return ApiResponse.<Void>builder()
                 .code(200)
@@ -38,7 +38,7 @@ public class RecruiterInvoiceController {
     }
 
     @Operation(summary = """
-            Call this API before call POST /api/payment
+            Call this API before call POST /api/recruiter-payment
             to check if recruiter has an active package.
             input: none
             output: true if recruiter has active package, false if not
