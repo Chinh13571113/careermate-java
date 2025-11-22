@@ -2,7 +2,7 @@ package com.fpt.careermate.services.order_services.web.rest;
 
 import com.fpt.careermate.services.order_services.service.CandidateInvoiceImp;
 import com.fpt.careermate.common.response.ApiResponse;
-import com.fpt.careermate.services.order_services.service.dto.response.MyCandidateOrderResponse;
+import com.fpt.careermate.services.order_services.service.dto.response.MyCandidateInvoiceResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Positive;
@@ -38,11 +38,11 @@ public class CandidateInvoiceController {
                 .build();
     }
 
-    @Operation(summary = "Get candidateInvoice list for candidate")
-    @GetMapping("/my-pacakge")
-    public ApiResponse<MyCandidateOrderResponse> myOrderList() {
-        return ApiResponse.<MyCandidateOrderResponse>builder()
-                .result(candidateInvoiceImp.myCandidatePackage())
+    @Operation(summary = "Get my candidateInvoice for candidate")
+    @GetMapping("/my-invoice")
+    public ApiResponse<MyCandidateInvoiceResponse> myOrderList() {
+        return ApiResponse.<MyCandidateInvoiceResponse>builder()
+                .result(candidateInvoiceImp.getMyActiveInvoice())
                 .code(200)
                 .message("success")
                 .build();

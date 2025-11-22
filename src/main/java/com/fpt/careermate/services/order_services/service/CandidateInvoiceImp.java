@@ -1,17 +1,19 @@
 package com.fpt.careermate.services.order_services.service;
 
 import com.fpt.careermate.common.constant.StatusInvoice;
+import com.fpt.careermate.common.util.CoachUtil;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.authentication_services.service.AuthenticationImp;
 import com.fpt.careermate.services.order_services.domain.CandidateInvoice;
-import com.fpt.careermate.services.order_services.service.dto.response.MyCandidateOrderResponse;
+import com.fpt.careermate.services.order_services.service.dto.response.MyCandidateInvoiceResponse;
+import com.fpt.careermate.services.order_services.service.dto.response.MyRecruiterInvoiceResponse;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
 import com.fpt.careermate.services.order_services.domain.CandidatePackage;
 import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
 import com.fpt.careermate.services.order_services.repository.CandidateInvoiceRepo;
 import com.fpt.careermate.services.order_services.repository.CandidatePackageRepo;
 import com.fpt.careermate.services.order_services.service.impl.CandidateInvoiceService;
-import com.fpt.careermate.services.order_services.service.mapper.OrderMapper;
+import com.fpt.careermate.services.order_services.service.mapper.CandidateInvoiceMapper;
 import com.fpt.careermate.common.exception.AppException;
 import com.fpt.careermate.common.exception.ErrorCode;
 import lombok.AccessLevel;
@@ -33,8 +35,9 @@ public class CandidateInvoiceImp implements CandidateInvoiceService {
     CandidateInvoiceRepo candidateInvoiceRepo;
     CandidatePackageRepo candidatePackageRepo;
     CandidateRepo candidateRepo;
-    OrderMapper orderMapper;
+    CandidateInvoiceMapper candidateInvoiceMapper;
     AuthenticationImp authenticationImp;
+    CoachUtil coachUtil;
 
 //    @Transactional
     public void createInvoice(String packageName, Candidate currentCandidate) {
@@ -69,18 +72,6 @@ public class CandidateInvoiceImp implements CandidateInvoiceService {
         }
     }
 
-    @PreAuthorize("hasRole('CANDIDATE')")
-    @Override
-    public MyCandidateOrderResponse myCandidatePackage() {
-        Candidate currentCandidate = getCurrentCandidate();
-
-        Optional<CandidateInvoice> candidateOrder = candidateInvoiceRepo.findByCandidate_CandidateIdAndIsActiveTrue(currentCandidate.getCandidateId());
-
-        if(candidateOrder.isEmpty()) throw new AppException(ErrorCode.USING_FREE_PACAKGE);
-
-        return orderMapper.toOrderResponse(candidateOrder.get());
-    }
-    
     private Candidate getCurrentCandidate(){
         Account currentAccount = authenticationImp.findByEmail();
         Optional<Candidate> candidate = candidateRepo.findByAccount_Id(Integer.valueOf(currentAccount.getId()));
@@ -111,5 +102,20 @@ public class CandidateInvoiceImp implements CandidateInvoiceService {
         Candidate currentCandidate = getCurrentCandidate();
         Optional<CandidateInvoice> activeOrder = candidateInvoiceRepo.findByCandidate_CandidateIdAndIsActiveTrue(currentCandidate.getCandidateId());
         return activeOrder.isPresent();
+    }
+
+    // Get my active invoice by candidate id
+    @PreAuthorize("hasRole('CANDIDATE')")
+    @Override
+    public MyCandidateInvoiceResponse getMyActiveInvoice() {
+        Candidate currentCandidate = coachUtil.getCurrentCandidate();
+        Optional<CandidateInvoice> exsting =
+                candidateInvoiceRepo.findByCandidate_CandidateIdAndIsActiveTrue(
+                        currentCandidate.getCandidateId()
+                );
+
+        if(exsting.isEmpty()) throw new AppException(ErrorCode.CANDIDATE_INVOICE_NOT_FOUND);
+
+        return candidateInvoiceMapper.toMyCandidateInvoiceResponse(exsting.get());
     }
 }

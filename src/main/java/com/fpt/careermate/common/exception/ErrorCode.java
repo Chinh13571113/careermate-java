@@ -143,7 +143,8 @@ public enum ErrorCode {
     RESUME_NOT_ACTIVE(8002,"Your Resume is not active" ,HttpStatus.BAD_REQUEST ),
 
     CAN_NOT_PAY_FOR_BASIC_PACKAGE(2005, "Cannot create payment URL for BASIC package", HttpStatus.BAD_REQUEST),
-    RECRUITER_INVOICE_NOT_FOUND(2006, "RecruiterInvoice not found", HttpStatus.NOT_FOUND);
+    RECRUITER_INVOICE_NOT_FOUND(2006, "RecruiterInvoice not found", HttpStatus.NOT_FOUND),
+    CANDIDATE_INVOICE_NOT_FOUND(2007, "CandidateInvoice not found", HttpStatus.NOT_FOUND);
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

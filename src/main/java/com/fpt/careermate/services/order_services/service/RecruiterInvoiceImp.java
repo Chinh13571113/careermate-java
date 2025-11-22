@@ -34,7 +34,7 @@ public class RecruiterInvoiceImp implements RecruiterInvoiceService {
     CoachUtil coachUtil;
     RecruiterInvoiceMapper recruiterInvoiceMapper;
 
-    @Transactional
+//    @Transactional
     public void creatInvoice(String packageName, Recruiter currentRecruiter) {
         RecruiterPackage pkg = recruiterPackageRepo.findByName(packageName);
 
