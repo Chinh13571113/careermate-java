@@ -12,8 +12,6 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AdminRecruiterInvoiceResponse {
     int id;
-    int recruiterId;
-    String recruiterCompanyName;
     String recruiterEmail;
     String packageName;
     Long amount;

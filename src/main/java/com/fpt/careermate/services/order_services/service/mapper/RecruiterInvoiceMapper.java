@@ -10,10 +10,4 @@ import org.mapstruct.Mapping;
 public interface RecruiterInvoiceMapper {
     @Mapping(source = "recruiterPackage.name", target = "packageName")
     MyRecruiterInvoiceResponse toMyRecruiterInvoiceResponse(RecruiterInvoice recruiterInvoice);
-
-    @Mapping(source = "recruiter.id", target = "recruiterId")
-    @Mapping(source = "recruiter.companyName", target = "recruiterCompanyName")
-    @Mapping(source = "recruiter.account.email", target = "recruiterEmail")
-    @Mapping(source = "recruiterPackage.name", target = "packageName")
-    AdminRecruiterInvoiceResponse toAdminRecruiterInvoiceResponse(RecruiterInvoice recruiterInvoice);
 }
