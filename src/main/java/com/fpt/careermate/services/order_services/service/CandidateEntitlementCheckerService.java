@@ -6,10 +6,10 @@ import com.fpt.careermate.common.constant.PackageCode;
 import com.fpt.careermate.common.util.CoachUtil;
 import com.fpt.careermate.services.job_services.repository.JobApplyRepo;
 import com.fpt.careermate.services.order_services.domain.CandidatePackage;
-import com.fpt.careermate.services.order_services.domain.EntitlementPackage;
-import com.fpt.careermate.services.order_services.domain.Invoice;
-import com.fpt.careermate.services.order_services.repository.EntitlementPackageRepo;
-import com.fpt.careermate.services.order_services.repository.PackageRepo;
+import com.fpt.careermate.services.order_services.domain.CandidateEntitlementPackage;
+import com.fpt.careermate.services.order_services.domain.CandidateInvoice;
+import com.fpt.careermate.services.order_services.repository.CandidateEntitlementPackageRepo;
+import com.fpt.careermate.services.order_services.repository.CandidatePackageRepo;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.Month;
-import java.time.YearMonth;
 
 /**
  * Service kiểm tra quyền hạn của Candidate khi mua gói dịch vụ
@@ -32,9 +30,9 @@ import java.time.YearMonth;
 @PreAuthorize("hasRole('CANDIDATE')")
 public class CandidateEntitlementCheckerService {
 
-    EntitlementPackageRepo entitlementPackageRepo;
+    CandidateEntitlementPackageRepo candidateEntitlementPackageRepo;
     CoachUtil coachUtil;
-    PackageRepo packageRepo;
+    CandidatePackageRepo candidatePackageRepo;
     JobApplyRepo jobApplyRepo;
 
 
@@ -43,28 +41,28 @@ public class CandidateEntitlementCheckerService {
         if (checkFreePackage()) {
             // Nếu là Free package
             log.info("Candidate is on Free CandidatePackage");
-            CandidatePackage freeCandidatePackage = packageRepo.findByName(PackageCode.FREE);
-            EntitlementPackage entitlement = entitlementPackageRepo
-                    .findByCandidatePackage_NameAndEntitlement_Code(freeCandidatePackage.getName(), entitlementCode);
+            CandidatePackage freeCandidatePackage = candidatePackageRepo.findByName(PackageCode.FREE);
+            CandidateEntitlementPackage entitlement = candidateEntitlementPackageRepo
+                    .findByCandidatePackage_NameAndCandidateEntitlement_Code(freeCandidatePackage.getName(), entitlementCode);
             return entitlement != null && entitlement.isEnabled();
         }
 
-        CandidatePackage currentCandidatePackage = coachUtil.getCurrentCandidate().getInvoice().getCandidatePackage();
+        CandidatePackage currentCandidatePackage = coachUtil.getCurrentCandidate().getCandidateInvoice().getCandidatePackage();
 
-        // Lấy entitlement "entitlementCode"
-        EntitlementPackage entitlement = entitlementPackageRepo
-                .findByCandidatePackage_NameAndEntitlement_Code(currentCandidatePackage.getName(), entitlementCode);
+        // Lấy candidateEntitlement "entitlementCode"
+        CandidateEntitlementPackage entitlement = candidateEntitlementPackageRepo
+                .findByCandidatePackage_NameAndCandidateEntitlement_Code(currentCandidatePackage.getName(), entitlementCode);
 
         // Trả kết quả
         return entitlement != null && entitlement.isEnabled();
     }
 
-    // Khi có candidate mới, kiểm tra invoice == null hoặc active == false là Free
+    // Khi có candidate mới, kiểm tra candidateInvoice == null hoặc active == false là Free
     private boolean checkFreePackage() {
         Candidate currentCandidate = coachUtil.getCurrentCandidate();
-        Invoice invoice = currentCandidate.getInvoice();
+        CandidateInvoice candidateInvoice = currentCandidate.getCandidateInvoice();
 
-        if(invoice == null || !invoice.isActive()) {
+        if(candidateInvoice == null || !candidateInvoice.isActive()) {
             return true; // candidate chưa có package active → coi như Free
         }
 
@@ -106,19 +104,19 @@ public class CandidateEntitlementCheckerService {
         // Đếm số lượng CV hiện có của candidate
         int currentCvCount = candidate.getResumes().size();
 
-        // Lấy gói hiện tại (Free nếu không có invoice hoạt động)
+        // Lấy gói hiện tại (Free nếu không có candidateInvoice hoạt động)
         CandidatePackage candidatePackage = checkFreePackage()
-                ? packageRepo.findByName(PackageCode.FREE)
-                : candidate.getInvoice().getCandidatePackage();
+                ? candidatePackageRepo.findByName(PackageCode.FREE)
+                : candidate.getCandidateInvoice().getCandidatePackage();
 
-        // Lấy entitlement CV_BUILDER tương ứng với gói đó
-        EntitlementPackage entitlement = entitlementPackageRepo
-                .findByCandidatePackage_NameAndEntitlement_Code(
+        // Lấy candidateEntitlement CV_BUILDER tương ứng với gói đó
+        CandidateEntitlementPackage entitlement = candidateEntitlementPackageRepo
+                .findByCandidatePackage_NameAndCandidateEntitlement_Code(
                         candidatePackage.getName(),
                         EntitlementCode.CV_BUILDER
                 );
 
-        // Nếu entitlement không tồn tại hoặc bị disable → không được tạo
+        // Nếu candidateEntitlement không tồn tại hoặc bị disable → không được tạo
         if (entitlement == null || !entitlement.isEnabled()) return false;
 
         // Nếu limit = 0 → nghĩa là không giới hạn
@@ -149,20 +147,20 @@ public class CandidateEntitlementCheckerService {
 
         // Lấy gói hiện tại
         CandidatePackage candidatePackage = checkFreePackage()
-                ? packageRepo.findByName(PackageCode.FREE)
-                : candidate.getInvoice().getCandidatePackage();
+                ? candidatePackageRepo.findByName(PackageCode.FREE)
+                : candidate.getCandidateInvoice().getCandidatePackage();
 
-        // Lấy entitlement APPLY_JOB tương ứng với gói đó
-        EntitlementPackage entitlement = entitlementPackageRepo
-                .findByCandidatePackage_NameAndEntitlement_Code(
+        // Lấy candidateEntitlement APPLY_JOB tương ứng với gói đó
+        CandidateEntitlementPackage entitlement = candidateEntitlementPackageRepo
+                .findByCandidatePackage_NameAndCandidateEntitlement_Code(
                         candidatePackage.getName(),
                         EntitlementCode.APPLY_JOB
                 );
 
-        // Nếu entitlement không tồn tại hoặc bị disable → không được apply
+        // Nếu candidateEntitlement không tồn tại hoặc bị disable → không được apply
         if (entitlement == null || !entitlement.isEnabled()) return false;
 
-        // Nếu entitlement có limitCount = 0 → không giới hạn apply
+        // Nếu candidateEntitlement có limitCount = 0 → không giới hạn apply
         Integer limit = entitlement.getLimitValue();
         if (limit == null || limit == 0) return true;
 

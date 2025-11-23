@@ -1,7 +1,7 @@
 package com.fpt.careermate.services.payment_services.web.rest;
 
-import com.fpt.careermate.services.payment_services.service.PaymentImp;
 import com.fpt.careermate.common.response.ApiResponse;
+import com.fpt.careermate.services.payment_services.service.RecruiterPaymentImp;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,18 +12,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Payment", description = "Manage payment")
+@Tag(name = "Recruiter - Payment", description = "Manage recruiter pacakge")
 @RestController
-@RequestMapping("/api/payment")
+@RequestMapping("/api/recruiter-payment")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class PaymentController {
+public class RecruiterPaymentController {
 
-    private final PaymentImp paymentImp;
+    RecruiterPaymentImp recruiterPaymentImp;
 
     @Operation(summary = """
-            Call GET /order/active API to check if candidate has an active order.
+            Call GET /order/active API to check if recruiter has an active order.
             If not, create a payment URL for the specified package and return it.
             input: packageName
             output: paymentUrl
@@ -32,7 +32,7 @@ public class PaymentController {
     public ApiResponse<String> createPayment(
             @RequestParam String packageName,
             HttpServletRequest httpServletRequest) {
-        String paymentUrl = paymentImp.createPaymentUrl(httpServletRequest, packageName);
+        String paymentUrl = recruiterPaymentImp.createPaymentUrl(httpServletRequest, packageName);
 
         return ApiResponse.<String>builder()
                 .result(paymentUrl)
@@ -45,7 +45,7 @@ public class PaymentController {
     @GetMapping("/return")
     public ApiResponse<String> paymentReturn(HttpServletRequest httpServletRequest, Model model){
         return ApiResponse.<String>builder()
-                .result(paymentImp.paymentReturn(httpServletRequest, model))
+                .result(recruiterPaymentImp.paymentReturn(httpServletRequest, model))
                 .code(200)
                 .build();
     }

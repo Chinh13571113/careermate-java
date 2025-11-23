@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "package")
+@Entity(name = "candidate_package")
 public class CandidatePackage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,15 +23,13 @@ public class CandidatePackage {
     Long price;
     int durationDays;
 
-
-
     LocalDateTime createAt;
 
     @OneToMany(mappedBy = "candidatePackage")
-    List<EntitlementPackage> entitlementPackages;
+    List<CandidateEntitlementPackage> candidateEntitlementPackages;
 
     int priority;
 
     @OneToMany(mappedBy = "candidatePackage")
-    List<Invoice> invoices;
+    List<CandidateInvoice> candidateInvoices;
 }

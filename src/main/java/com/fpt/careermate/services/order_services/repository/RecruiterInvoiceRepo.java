@@ -1,6 +1,6 @@
 package com.fpt.careermate.services.order_services.repository;
 
-import com.fpt.careermate.services.order_services.domain.Invoice;
+import com.fpt.careermate.services.order_services.domain.RecruiterInvoice;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,9 +10,9 @@ import java.util.Optional;
 
 
 @Repository
-public interface CandidateOrderRepo extends JpaRepository<Invoice,Integer> {
-    Optional<Invoice> findByCandidate_CandidateIdAndIsActiveTrue(int candidateId);
+public interface RecruiterInvoiceRepo extends JpaRepository<RecruiterInvoice,Integer> {
+    Optional<RecruiterInvoice> findByRecruiter_IdAndIsActiveTrue(int recruiterId);
 
     @Override
-    Page<Invoice> findAll(Pageable pageable);
+    Page<RecruiterInvoice> findAll(Pageable pageable);
 }

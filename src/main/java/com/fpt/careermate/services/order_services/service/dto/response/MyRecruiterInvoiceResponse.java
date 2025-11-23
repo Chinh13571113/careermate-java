@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class MyCandidateOrderResponse {
+public class MyRecruiterInvoiceResponse {
     LocalDate startDate;
     LocalDate endDate;
     String packageName;

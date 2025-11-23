@@ -12,13 +12,13 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Validated
-@Tag(name = "Entitlement", description = "Manage Entitlement")
+@Tag(name = "Candidate - Entitlement", description = "Manage Candidate Entitlement")
 @RestController
-@RequestMapping("/api/entitlement")
+@RequestMapping("/api/candidate-entitlement")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class EntitlementController {
+public class CandidateEntitlementController {
 
     CandidateEntitlementCheckerService checkerService;
 

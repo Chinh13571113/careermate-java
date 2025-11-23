@@ -50,7 +50,7 @@ public class SecurityConfig {
             "/v3/api-docs.yaml",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/payment/return",
+            "/api/candidate-payment/return",
             // Public file upload for recruiter logos during registration
             "/api/upload/recruiter-logo-public",
             "api/coach/course/recommendation",
@@ -61,7 +61,8 @@ public class SecurityConfig {
             "/actuator/**",
             "/api/job-postings/**",
             "/api/jdskill/top-used",
-            "/api/saved-jobs/jobs-for-candidate"
+            "/api/saved-jobs/jobs-for-candidate",
+            "/api/recruiter-payment/return"
     };
     @Autowired
     private CustomJwtDecoder customJwtDecoder;

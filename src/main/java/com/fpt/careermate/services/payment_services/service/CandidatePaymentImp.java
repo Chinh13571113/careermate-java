@@ -7,13 +7,12 @@ import com.fpt.careermate.config.PaymentConfig;
 import com.fpt.careermate.common.constant.StatusPayment;
 import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.account_services.repository.AccountRepo;
-import com.fpt.careermate.services.order_services.domain.Invoice;
+import com.fpt.careermate.services.order_services.domain.CandidateInvoice;
 import com.fpt.careermate.services.order_services.domain.CandidatePackage;
-import com.fpt.careermate.services.order_services.service.OrderImp;
+import com.fpt.careermate.services.order_services.service.CandidateInvoiceImp;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
 import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
-import com.fpt.careermate.services.order_services.repository.CandidateOrderRepo;
-import com.fpt.careermate.services.payment_services.service.impl.PaymentService;
+import com.fpt.careermate.services.payment_services.service.impl.CandidatePaymentService;
 import com.fpt.careermate.common.util.PaymentUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
@@ -36,14 +35,13 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class PaymentImp implements PaymentService {
+public class CandidatePaymentImp implements CandidatePaymentService {
 
     PaymentConfig paymentConfig;
     PaymentUtil paymentUtil;
-    CandidateOrderRepo candidateOrderRepo;
     CandidateRepo candidateRepo;
     AccountRepo accountRepo;
-    OrderImp orderImp;
+    CandidateInvoiceImp candidateInvoiceImp;
 
     static DateTimeFormatter VNP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private final CoachUtil coachUtil;
@@ -57,9 +55,9 @@ public class PaymentImp implements PaymentService {
         if(upperPackageName.equals("FREE")) throw new AppException(ErrorCode.CAN_NOT_PAY_FOR_FREE_PACKAGE);
 
         // Kiểm tra xem candidate đã có đơn hàng active chưa
-        if(orderImp.hasActivePackage()) throw new AppException(ErrorCode.HAS_ACTIVE_PACKAGE);
+        if(candidateInvoiceImp.hasActivePackage()) throw new AppException(ErrorCode.HAS_ACTIVE_PACKAGE);
 
-        CandidatePackage candidatePackage = orderImp.getPackageByName(upperPackageName);
+        CandidatePackage candidatePackage = candidateInvoiceImp.getPackageByName(upperPackageName);
 
         HttpServletRequest req = httpServletRequest;
         String bankCode = "NCB";
@@ -76,15 +74,15 @@ public class PaymentImp implements PaymentService {
         Map<String, String> vnpParams = new HashMap<>();
         vnpParams.put("vnp_Version", vnp_Version);
         vnpParams.put("vnp_Command", vnp_Command);
-        vnpParams.put("vnp_TmnCode", paymentConfig.vnp_TmnCode);
+        vnpParams.put("vnp_TmnCode", paymentConfig.vnp_TmnCode.trim());
         vnpParams.put("vnp_Amount", String.valueOf(vnpAmount));
         vnpParams.put("vnp_CurrCode", "VND");
         if (bankCode != null && !bankCode.isEmpty()) vnpParams.put("vnp_BankCode", bankCode);
         vnpParams.put("vnp_TxnRef", vnp_TxnRef);
-        vnpParams.put("vnp_OrderInfo", "Invoice payment:" + vnp_TxnRef);
+        vnpParams.put("vnp_OrderInfo", "CandidateInvoice payment:" + vnp_TxnRef);
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", (language == null || language.isEmpty()) ? "vn" : language);
-        vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_ReturnUrl);
+        vnpParams.put("vnp_ReturnUrl", paymentConfig.vnp_ReturnUrl.trim());
         vnpParams.put("vnp_IpAddr", vnp_IpAddr);
         vnpParams.put("vnp_CreateDate", paymentUtil.nowFormatted());
         vnpParams.put("vnp_ExpireDate", paymentUtil.expireDateFormatted(15));
@@ -94,7 +92,7 @@ public class PaymentImp implements PaymentService {
         String hashData = paymentUtil.buildHashDataSorted(vnpParams);
         String query = paymentUtil.buildQueryString(vnpParams);
 
-        String secureHash = paymentUtil.hmacSHA512(paymentConfig.secretKey, hashData);
+        String secureHash = paymentUtil.hmacSHA512(paymentConfig.secretKey.trim(), hashData);
         query += "&vnp_SecureHash=" + secureHash;
 
         return paymentConfig.vnp_PayUrl + "?" + query;
@@ -176,17 +174,17 @@ public class PaymentImp implements PaymentService {
         Optional<Candidate> exstingCandidate = candidateRepo.findByAccount_Id(exstingAccount.get().getId());
         Candidate candidate = exstingCandidate.get();
 
-        // Nếu không tìm thấy invoice thì là Free package
-        if(candidate.getInvoice() == null) {
-            // Tạo Invoice mới
-            orderImp.createOrder(packageName, candidate);
+        // Nếu không tìm thấy candidateInvoice thì là Free package
+        if(candidate.getCandidateInvoice() == null) {
+            // Tạo CandidateInvoice mới
+            candidateInvoiceImp.createInvoice(packageName, candidate);
         }
         else {
-            // Cập nhật Invoice
-            // Tìm invoice từ DB
-            Invoice exstingInvoice = candidate.getInvoice();
+            // Cập nhật CandidateInvoice
+            // Tìm candidateInvoice từ DB
+            CandidateInvoice exstingCandidateInvoice = candidate.getCandidateInvoice();
             // Cập nhật trạng thái và các thông tin liên quan bằng việc gọi updateCandidateOrder method
-            orderImp.updateCandidateOrder(exstingInvoice, packageName);
+            candidateInvoiceImp.updateCandidateOrder(exstingCandidateInvoice, packageName);
         }
 
         // --- Build redirect query (forward original params except vnp_SecureHash) + serverVerified info ---

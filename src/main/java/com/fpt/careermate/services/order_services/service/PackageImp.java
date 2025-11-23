@@ -1,6 +1,6 @@
 package com.fpt.careermate.services.order_services.service;
 
-import com.fpt.careermate.services.order_services.repository.PackageRepo;
+import com.fpt.careermate.services.order_services.repository.CandidatePackageRepo;
 import com.fpt.careermate.services.order_services.service.dto.request.PackageCreationRequest;
 import com.fpt.careermate.services.order_services.service.dto.response.PackageResponse;
 import com.fpt.careermate.services.order_services.service.impl.PackageService;
@@ -20,19 +20,19 @@ import java.util.List;
 @Slf4j
 public class PackageImp implements PackageService {
 
-    PackageRepo packageRepo;
+    CandidatePackageRepo candidatePackageRepo;
     PackageMapper packageMapper;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Override
     public PackageResponse createPackage(PackageCreationRequest request) {
-        return packageMapper.toPackageResponse(packageRepo.save(packageMapper.toPackage(request)));
+        return packageMapper.toPackageResponse(candidatePackageRepo.save(packageMapper.toPackage(request)));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @Override
     public List<PackageResponse> getPackageList() {
-        return packageMapper.toPackageResponseList(packageRepo.findAll());
+        return packageMapper.toPackageResponseList(candidatePackageRepo.findAll());
     }
 
 }

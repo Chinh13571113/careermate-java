@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
-@Entity(name = "entitlement_package")
-public class EntitlementPackage {
+@Entity(name = "candidate_entitlement_package")
+public class CandidateEntitlementPackage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
@@ -24,23 +24,23 @@ public class EntitlementPackage {
 
     @ManyToOne
     @JoinColumn(name = "entitlement_id")
-    Entitlement entitlement;
+    CandidateEntitlement candidateEntitlement;
 
     @ManyToOne
     @JoinColumn(name = "package_id")
     CandidatePackage candidatePackage;
 
-    public EntitlementPackage(
+    public CandidateEntitlementPackage(
             boolean enabled,
             int limitValue,
             LocalDateTime createdAt,
-            Entitlement entitlement,
+            CandidateEntitlement candidateEntitlement,
             CandidatePackage candidatePackage
     ) {
         this.enabled = enabled;
         this.limitValue = limitValue;
         this.createdAt = createdAt;
-        this.entitlement = entitlement;
+        this.candidateEntitlement = candidateEntitlement;
         this.candidatePackage = candidatePackage;
     }
 }
