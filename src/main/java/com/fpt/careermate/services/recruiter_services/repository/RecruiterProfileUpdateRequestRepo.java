@@ -37,5 +37,7 @@ public interface RecruiterProfileUpdateRequestRepo extends JpaRepository<Recruit
         @Param("search") String search,
         Pageable pageable
     );
+    
+    Long countByStatus(String status);
 }
 

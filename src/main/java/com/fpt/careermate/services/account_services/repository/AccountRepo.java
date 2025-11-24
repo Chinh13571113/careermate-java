@@ -40,4 +40,11 @@ public interface AccountRepo extends JpaRepository<Account,Integer> {
 
     @Query("SELECT a FROM account a JOIN a.roles r WHERE r.name = 'ADMIN' AND a.status = 'ACTIVE'")
     List<Account> findAdminAccounts();
+
+    // Statistics queries for admin dashboard
+    @Query("SELECT COUNT(DISTINCT a) FROM account a WHERE a.status = :status")
+    Long countByStatus(@Param("status") String status);
+
+    @Query("SELECT COUNT(DISTINCT a) FROM account a JOIN a.roles r WHERE r.name = :roleName")
+    Long countByRoleName(@Param("roleName") String roleName);
 }

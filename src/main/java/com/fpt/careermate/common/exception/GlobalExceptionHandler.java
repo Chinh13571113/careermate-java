@@ -8,6 +8,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,8 +17,28 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 @ControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+    
+    /**
+     * Handle client disconnection errors (browser closed, network drop, etc.)
+     * These are expected when users close tabs or navigate away
+     */
+    @ExceptionHandler(value = AsyncRequestNotUsableException.class)
+    ResponseEntity<ApiResponse> handlingAsyncRequestNotUsableException(AsyncRequestNotUsableException exception) {
+        // Don't log full stack trace - this is normal behavior
+        log.debug("Client disconnected: {}", exception.getMessage());
+        // Return null - connection is already closed, can't send response
+        return null;
+    }
+    
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse> handlingRuntimeException(Exception exception) {
+        // Ignore client abort exceptions - these are normal when client closes connection
+        if (exception.getCause() != null && 
+            exception.getCause().getClass().getName().contains("ClientAbortException")) {
+            log.debug("Client aborted connection: {}", exception.getMessage());
+            return null;
+        }
+        
         log.error("Exception: ", exception);
         ApiResponse apiResponse = new ApiResponse();
 

@@ -22,15 +22,35 @@ public class HealthService {
 
     public HealthStatusDTO getAggregatedHealth() {
         Map<String, ComponentHealth> components = new LinkedHashMap<>();
-        boolean anyDown = false;
+        boolean systemDown = false;
+        
+        // Only check critical components for system status
+        String[] criticalComponents = {"db", "kafka"};
 
         for (Map.Entry<String, HealthIndicator> entry : healthIndicators.entrySet()) {
             String name = entry.getKey();
-            Health health = entry.getValue().health();
             
+            // Skip notification worker completely - it's not critical
+            if (name.equals("notificationWorker")) {
+                continue;
+            }
+            
+            Health health = entry.getValue().health();
             String status = health.getStatus().getCode();
-            if (Status.DOWN.getCode().equals(status) || Status.OUT_OF_SERVICE.getCode().equals(status)) {
-                anyDown = true;
+            
+            // Check if this is a critical component
+            boolean isCritical = false;
+            for (String criticalName : criticalComponents) {
+                if (name.equals(criticalName)) {
+                    isCritical = true;
+                    break;
+                }
+            }
+            
+            // Only critical components affect overall status
+            if (isCritical && Status.DOWN.getCode().equals(status)) {
+                systemDown = true;
+                log.warn("Critical component {} is DOWN!", name);
             }
             
             Map<String, Object> details = health.getDetails();
@@ -45,8 +65,8 @@ public class HealthService {
             ));
         }
 
-        String overall = anyDown ? Status.DOWN.getCode() : Status.UP.getCode();
-        log.info("Admin health check requested. Overall status: {}", overall);
+        String overall = systemDown ? Status.DOWN.getCode() : Status.UP.getCode();
+        log.info("Health check: {} (DB and Kafka only)", overall);
         return new HealthStatusDTO(overall, components, Instant.now());
     }
 
