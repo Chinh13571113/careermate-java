@@ -36,4 +36,3 @@ public interface BlogRatingRepo extends JpaRepository<BlogRating, Long> {
     List<BlogRating> findByBlogIdOrderByCreatedAtDesc(Long blogId, Pageable pageable);
 
 }
-

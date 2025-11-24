@@ -2,16 +2,21 @@ package com.fpt.careermate.services.notification_services.web.rest;
 
 import com.fpt.careermate.common.exception.AppException;
 import com.fpt.careermate.common.exception.ErrorCode;
+import com.fpt.careermate.config.CustomJwtDecoder;
 import com.fpt.careermate.services.notification_services.service.NotificationSseService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -28,26 +33,40 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class NotificationSseController {
 
     private final NotificationSseService sseService;
+    private final CustomJwtDecoder jwtDecoder;
 
     /**
      * Establish an SSE connection for real-time notifications.
      * 
+     * ⚠️ IMPORTANT: Native EventSource cannot send Authorization headers!
+     * You MUST pass the JWT token as a query parameter.
+     * 
      * This endpoint creates a long-lived HTTP connection that streams notifications
-     * to the client in real-time. The connection is authenticated via JWT bearer
-     * token.
+     * to the client in real-time.
      * 
      * **How to use from frontend:**
      * ```javascript
-     * const eventSource = new EventSource('/api/notifications/stream', {
-     * headers: {
-     * 'Authorization': 'Bearer YOUR_JWT_TOKEN'
-     * }
-     * });
+     * // Get token from localStorage or your auth system
+     * const token = localStorage.getItem('token');
+     * 
+     * // Pass token as query parameter (EventSource limitation workaround)
+     * const eventSource = new EventSource(
+     * `http://localhost:8080/api/notifications/stream?token=${token}`
+     * );
      * 
      * // Listen for new notifications
      * eventSource.addEventListener('notification', (event) => {
      * const notification = JSON.parse(event.data);
      * console.log('New notification:', notification);
+     * });
+     * 
+     * // Listen for unread count updates (for bell badge)
+     * eventSource.addEventListener('unread-count', (event) => {
+     * const { count } = JSON.parse(event.data);
+     * console.log('Unread count:', count);
+     * // Update bell badge here
+     * });
+     * ```
      * // Update UI with notification
      * });
      * 
@@ -86,14 +105,32 @@ public class NotificationSseController {
      * notifications
      * - Authentication: JWT token must be valid and not expired
      * 
+     * 
+     * **Events sent by server:**
+     * - `connected`: Initial event confirming connection established
+     * - `notification`: New notification received (NotificationResponse object)
+     * - `unread-count`: Updated unread notification count ({ count: number })
+     * - `keepalive`: Periodic ping to keep connection alive
+     * 
+     * **Connection management:**
+     * - Timeout: 30 minutes of inactivity
+     * - Auto-reconnect: Browser handles reconnection automatically
+     * - Multiple tabs: Each tab gets its own connection, all receive same
+     * notifications
+     * - Authentication: JWT token required as query parameter
+     * 
+     * @param token JWT Bearer token (query parameter) - REQUIRED because
+     *              EventSource can't send headers
      * @return SseEmitter that streams notifications to the client
-     * @throws AppException if user is not authenticated
+     * @throws AppException if token is invalid or user is not authenticated
      */
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Stream real-time notifications", description = """
             Establish a Server-Sent Events (SSE) connection to receive real-time notifications.
 
-            **Authentication**: Requires valid JWT token in Authorization header.
+            **⚠️ IMPORTANT**: Pass JWT token as query parameter `?token=YOUR_JWT_TOKEN`
+
+            Native EventSource API cannot send custom headers, so token must be in query parameter.
 
             **Events**:
             - `connected` - Connection established successfully
@@ -103,13 +140,19 @@ public class NotificationSseController {
 
             **Usage**:
             ```javascript
-            const eventSource = new EventSource('/api/notifications/stream', {
-                headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
-            });
+            const token = localStorage.getItem('token');
+            const eventSource = new EventSource(
+                `http://localhost:8080/api/notifications/stream?token=${token}`
+            );
 
             eventSource.addEventListener('notification', (event) => {
                 const notification = JSON.parse(event.data);
                 // Handle new notification
+            });
+
+            eventSource.addEventListener('unread-count', (event) => {
+                const { count } = JSON.parse(event.data);
+                // Update bell badge
             });
             ```
 
@@ -117,31 +160,38 @@ public class NotificationSseController {
             - Timeout: 30 minutes
             - Auto-reconnect: Yes (handled by browser)
             - Multiple tabs: Supported (each gets own connection)
-
-            **Mobile Support**:
-            - React Native: Use EventSource polyfill (react-native-sse)
-            - Flutter: Use eventsource package
             """)
-    public SseEmitter streamNotifications() {
-        String userId = getCurrentUserId();
+    public SseEmitter streamNotifications(
+            @RequestParam(value = "token", required = false) String token) {
 
-        log.info("🔌 SSE connection request | userId: {}", userId);
-
-        return sseService.createConnection(userId);
-    }
-
-    /**
-     * Get the current authenticated user ID from SecurityContext.
-     * 
-     * @return User ID (email)
-     * @throws AppException if user is not authenticated
-     */
-    private String getCurrentUserId() {
+        // Try to get userId from SecurityContext first (if authenticated via header)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            log.error("❌ Unauthenticated SSE connection attempt");
+        String userId = null;
+
+        // If authenticated via Spring Security (Authorization header)
+        if (authentication != null && authentication.isAuthenticated()
+                && !authentication.getName().equals("anonymousUser")) {
+            userId = authentication.getName();
+            log.info("🔌 SSE connection via Authorization header | userId: {}", userId);
+        }
+        // If token provided as query parameter (EventSource workaround)
+        else if (token != null && !token.isEmpty()) {
+            try {
+                // Validate and decode JWT token
+                var jwt = jwtDecoder.decode(token);
+                userId = jwt.getSubject(); // Get userId from token
+                log.info("🔌 SSE connection via query parameter | userId: {}", userId);
+            } catch (Exception e) {
+                log.error("❌ Invalid token in SSE connection: {}", e.getMessage());
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+        }
+        // No authentication provided
+        else {
+            log.error("❌ Unauthenticated SSE connection attempt - no token provided");
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-        return authentication.getName();
+
+        return sseService.createConnection(userId);
     }
 }
