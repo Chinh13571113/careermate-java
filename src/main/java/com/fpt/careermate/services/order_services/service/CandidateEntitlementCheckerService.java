@@ -3,6 +3,7 @@ package com.fpt.careermate.services.order_services.service;
 
 import com.fpt.careermate.common.constant.EntitlementCode;
 import com.fpt.careermate.common.constant.PackageCode;
+import com.fpt.careermate.common.constant.StatusInvoice;
 import com.fpt.careermate.common.util.CoachUtil;
 import com.fpt.careermate.services.job_services.repository.JobApplyRepo;
 import com.fpt.careermate.services.order_services.domain.CandidatePackage;
@@ -57,16 +58,16 @@ public class CandidateEntitlementCheckerService {
         return entitlement != null && entitlement.isEnabled();
     }
 
-    // Khi có candidate mới, kiểm tra candidateInvoice == null hoặc active == false là Free
+    // Khi có candidate mới, kiểm tra candidateInvoice == null hoặc active == false hoặc status != PAID là Free
     private boolean checkFreePackage() {
         Candidate currentCandidate = coachUtil.getCurrentCandidate();
         CandidateInvoice candidateInvoice = currentCandidate.getCandidateInvoice();
 
-        if(candidateInvoice == null || !candidateInvoice.isActive()) {
-            return true; // candidate chưa có package active → coi như Free
+        if(candidateInvoice == null || !candidateInvoice.isActive() || !StatusInvoice.PAID.equals(candidateInvoice.getStatus())) {
+            return true; // candidate chưa có package active hoặc chưa thanh toán → coi như Free
         }
 
-        return false;  // candidate đã có package active
+        return false;  // candidate đã có package active và đã thanh toán
     }
 
     /**
