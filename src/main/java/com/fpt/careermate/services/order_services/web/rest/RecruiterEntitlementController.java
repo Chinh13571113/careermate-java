@@ -57,4 +57,20 @@ public class RecruiterEntitlementController {
                 .build();
     }
 
+    @GetMapping("/cv-view-checker")
+    @Operation(description = """
+            Check if recruiter can use CV VIEW feature
+            input: none
+            output: boolean
+            Need login as RECRUITER to access this API
+            Use this API before calling CV VIEW API
+            """)
+    public ApiResponse<Boolean> canViewCV() {
+        return ApiResponse.<Boolean>builder()
+                .result(checkerService.canViewCV())
+                .code(200)
+                .message("success")
+                .build();
+    }
+
 }

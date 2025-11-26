@@ -118,4 +118,11 @@ public class RecruiterEntitlementCheckerService {
         // Chỉ cho phép post nếu chưa vượt giới hạn trong tháng
         return appliedCountThisMonth < limit;
     }
+
+    /**
+     * Kiểm tra recruiter có quyền dùng tính năng CV VIEW không?
+     */
+    public boolean canViewCV() {
+        return core(RecruiterEntitlementCode.CV_VIEW);
+    }
 }
