@@ -35,10 +35,22 @@ public class WeaviateImp {
 
     // Thêm job posting vào weaviate để cho job posting recommendation
     public void addJobPostingToWeaviate(JobPosting savedPostgres) {
-        // Chuyển List<String> skills sang định dạng String[]
-        List<String> skills = savedPostgres.getJobDescriptions().stream()
-                .map(jd -> jd.getJdSkill().getName())
-                .toList();
+        // Chuyển List<String> skills sang định dạng String[] (handle empty/null case)
+        List<String> skills;
+        try {
+            if (savedPostgres.getJobDescriptions() != null && !savedPostgres.getJobDescriptions().isEmpty()) {
+                skills = savedPostgres.getJobDescriptions().stream()
+                        .map(jd -> jd.getJdSkill().getName())
+                        .toList();
+            } else {
+                skills = List.of(); // Empty list if no descriptions
+            }
+        } catch (Exception e) {
+            // Handle lazy loading exception or any other error
+            log.warn("Could not load job descriptions for job '{}', using empty skills list",
+                    savedPostgres.getTitle());
+            skills = List.of();
+        }
 
         // Tạo job posting map để thêm vào weaviate
         Map<String,Object> jobPostingMap = new HashMap<>();
@@ -53,6 +65,40 @@ public class WeaviateImp {
                 .withClassName("JobPosting")
                 .withProperties(jobPostingMap)
                 .run();
+    }
+
+    // Kiểm tra xem job posting đã tồn tại trong Weaviate chưa
+    public boolean isJobPostingExistsInWeaviate(Integer jobId) {
+        try {
+            String query = String.format(
+                "{Get{JobPosting(where:{path:[\"jobId\"],operator:Equal,valueInt:%d}){jobId}}}",
+                jobId
+            );
+
+            var result = weaviateClient.graphQL().raw()
+                    .withQuery(query)
+                    .run();
+
+            if (result.hasErrors()) {
+                log.warn("Error checking job posting existence in Weaviate: {}",
+                        result.getError().getMessages());
+                return false;
+            }
+
+            var data = result.getResult();
+            if (data != null && data.getData() != null) {
+                var getData = (Map<String, Object>) data.getData();
+                var get = (Map<String, Object>) getData.get("Get");
+                if (get != null) {
+                    var jobPostings = (List<?>) get.get("JobPosting");
+                    return jobPostings != null && !jobPostings.isEmpty();
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Exception while checking job posting existence in Weaviate: {}", e.getMessage());
+            return false;
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -122,7 +168,7 @@ public class WeaviateImp {
                 .run();
 
         if (r1.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
         }
 
         // title: text
@@ -145,7 +191,7 @@ public class WeaviateImp {
                 .run();
 
         if (r2.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
         }
 
         // description: text
@@ -168,7 +214,7 @@ public class WeaviateImp {
                 .run();
 
         if (r3.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
         }
 
         // skills: text[]
@@ -191,7 +237,7 @@ public class WeaviateImp {
                 .run();
 
         if (r4.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
         }
 
         // address: text
@@ -214,7 +260,7 @@ public class WeaviateImp {
                 .run();
 
         if (r5.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
         }
     }
 
