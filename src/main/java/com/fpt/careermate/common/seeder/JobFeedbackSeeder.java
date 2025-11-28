@@ -4,10 +4,14 @@ import com.fpt.careermate.services.account_services.domain.Account;
 import com.fpt.careermate.services.account_services.repository.AccountRepo;
 import com.fpt.careermate.services.authentication_services.domain.Role;
 import com.fpt.careermate.services.authentication_services.repository.RoleRepo;
+import com.fpt.careermate.services.job_services.domain.JobDescription;
 import com.fpt.careermate.services.job_services.domain.JobFeedback;
 import com.fpt.careermate.services.job_services.domain.JobPosting;
+import com.fpt.careermate.services.job_services.domain.JdSkill;
+import com.fpt.careermate.services.job_services.repository.JobDescriptionRepo;
 import com.fpt.careermate.services.job_services.repository.JobFeedbackRepo;
 import com.fpt.careermate.services.job_services.repository.JobPostingRepo;
+import com.fpt.careermate.services.job_services.repository.JdSkillRepo;
 import com.fpt.careermate.services.job_services.service.WeaviateImp;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
 import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
@@ -24,9 +28,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 🌱 JobFeedbackSeeder
@@ -36,7 +39,7 @@ import java.util.Set;
  * - Nếu có rồi thì tạo 10 job feedback với yêu cầu ít nhất 2 candidates thích cùng 1 job
  */
 @Component
-@Order(2) // Chạy sau CandidateProfileSeeder
+@Order(2) // Chạy sau JdSkillSeeder (Order 1)
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
@@ -44,6 +47,8 @@ public class JobFeedbackSeeder implements CommandLineRunner {
 
     JobPostingRepo jobPostingRepo;
     JobFeedbackRepo jobFeedbackRepo;
+    JobDescriptionRepo jobDescriptionRepo;
+    JdSkillRepo jdSkillRepo;
     CandidateRepo candidateRepo;
     RecruiterRepo recruiterRepo;
     AccountRepo accountRepo;
@@ -56,7 +61,7 @@ public class JobFeedbackSeeder implements CommandLineRunner {
         long jobPostingCount = jobPostingRepo.count();
 
         if (jobPostingCount == 0) {
-            log.info("🌱 No job postings found. Creating 10 job postings...");
+            log.info("🌱 No job postings found. Creating 10 job postings with JdSkills...");
             seedJobPostings();
 
         } else {
@@ -134,6 +139,15 @@ public class JobFeedbackSeeder implements CommandLineRunner {
             "1500-2200 USD"
         };
 
+        // Lấy tất cả JdSkills từ database (đã được seed bởi JdSkillSeeder)
+        List<JdSkill> allSkills = jdSkillRepo.findAll();
+        if (allSkills.isEmpty()) {
+            log.warn("⚠️ No JdSkills found in database. Please run JdSkillSeeder first.");
+            return;
+        }
+
+        log.info("📋 Found {} skills in database for job assignment", allSkills.size());
+
         for (int i = 0; i < 10; i++) {
             JobPosting jobPosting = JobPosting.builder()
                     .title(jobTitles[i])
@@ -149,11 +163,99 @@ public class JobFeedbackSeeder implements CommandLineRunner {
                     .jobPackage("Standard")
                     .build();
 
-            jobPostingRepo.save(jobPosting);
-            log.info("✅ Created job posting: {}", jobPosting.getTitle());
+            jobPosting = jobPostingRepo.save(jobPosting);
+
+            // Assign relevant skills from database to job posting
+            List<JdSkill> relevantSkills = getRelevantSkillsForJob(jobTitles[i], allSkills);
+            assignSkillsToJobPosting(jobPosting, relevantSkills);
+
+            log.info("✅ Created job posting: {} with {} skills",
+                    jobPosting.getTitle(), relevantSkills.size());
         }
 
         log.info("🎉 Successfully seeded 10 job postings!");
+    }
+
+    private List<JdSkill> getRelevantSkillsForJob(String jobTitle, List<JdSkill> allSkills) {
+        // Tạo map skills theo tên để dễ tìm kiếm
+        Map<String, JdSkill> skillMap = allSkills.stream()
+                .collect(Collectors.toMap(JdSkill::getName, skill -> skill));
+
+        List<JdSkill> relevantSkills = new ArrayList<>();
+
+        // Định nghĩa skills cho từng job dựa trên database
+        List<String> skillNames;
+
+        switch (jobTitle) {
+            case "Senior Java Developer":
+                skillNames = Arrays.asList("Java", "Spring Boot", "SQL", "MySQL", "PostgreSQL", "RESTful API", "Microservices basics");
+                break;
+            case "Frontend ReactJS Developer":
+                skillNames = Arrays.asList("JavaScript", "React", "TypeScript", "HTML/CSS", "RESTful API", "Redux", "TailwindCSS");
+                break;
+            case "Full Stack Engineer":
+                skillNames = Arrays.asList("JavaScript", "React", "Node.js", "Express", "SQL", "RESTful API", "TypeScript");
+                break;
+            case "Backend Node.js Developer":
+                skillNames = Arrays.asList("Node.js", "Express", "JavaScript", "TypeScript", "SQL", "RESTful API", "Microservices basics");
+                break;
+            case "DevOps Engineer":
+                skillNames = Arrays.asList("Docker", "CI/CD", "Linux", "AWS", "Jenkins", "Kafka", "Redis");
+                break;
+            case "Mobile Flutter Developer":
+                skillNames = Arrays.asList("Kotlin", "Android SDK", "Swift", "React Native Core APIs", "API integration", "REST API");
+                break;
+            case "Data Analyst":
+                skillNames = Arrays.asList("Python", "SQL", "Excel", "Power BI", "Tableau", "Data visualization", "PostgreSQL");
+                break;
+            case "Product Manager":
+                skillNames = Arrays.asList("Jira", "Data visualization", "Excel", "API integration", "Manual testing");
+                break;
+            case "UI/UX Designer":
+                skillNames = Arrays.asList("HTML/CSS", "JavaScript", "Responsive Design", "TailwindCSS", "Material UI");
+                break;
+            case "QA Automation Engineer":
+                skillNames = Arrays.asList("Test case design", "Manual testing", "API testing", "Postman", "Jira", "Bug tracking tools");
+                break;
+            default:
+                // Fallback: lấy random 5-7 skills từ database
+                skillNames = allSkills.stream()
+                        .limit(6)
+                        .map(JdSkill::getName)
+                        .collect(Collectors.toList());
+                break;
+        }
+
+        // Lấy skills từ database dựa trên tên
+        for (String skillName : skillNames) {
+            JdSkill skill = skillMap.get(skillName);
+            if (skill != null) {
+                relevantSkills.add(skill);
+            } else {
+                log.warn("  ⚠️ Skill '{}' not found in database for job '{}'", skillName, jobTitle);
+            }
+        }
+
+        return relevantSkills;
+    }
+
+    private void assignSkillsToJobPosting(JobPosting jobPosting, List<JdSkill> skills) {
+        for (int i = 0; i < skills.size(); i++) {
+            JdSkill skill = skills.get(i);
+
+            // First 3 skills are "must to have", others are "nice to have"
+            boolean mustToHave = i < 3;
+
+            JobDescription jobDescription = JobDescription.builder()
+                    .jobPosting(jobPosting)
+                    .jdSkill(skill)
+                    .mustToHave(mustToHave)
+                    .build();
+
+            jobDescriptionRepo.save(jobDescription);
+            log.debug("  ➕ Added skill '{}' to job '{}' (mustHave: {})",
+                     skill.getName(), jobPosting.getTitle(), mustToHave);
+        }
     }
 
     private void seedJobFeedback() {
