@@ -31,10 +31,42 @@ public class KafkaConfig {
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
 
+    // Cloud Kafka security settings (read directly from env vars)
+    @Value("${KAFKA_SECURITY_PROTOCOL:}")
+    private String securityProtocol;
+
+    @Value("${KAFKA_SASL_MECHANISM:}")
+    private String saslMechanism;
+
+    @Value("${KAFKA_SASL_USERNAME:}")
+    private String saslUsername;
+
+    @Value("${KAFKA_SASL_PASSWORD:}")
+    private String saslPassword;
+
     // Topic names as constants
     public static final String ADMIN_NOTIFICATION_TOPIC = "admin-notifications";
     public static final String RECRUITER_NOTIFICATION_TOPIC = "recruiter-notifications";
     public static final String CANDIDATE_NOTIFICATION_TOPIC = "candidate-notifications";
+
+    /**
+     * Common security properties for cloud Kafka (Confluent, Upstash, etc.)
+     */
+    private void addSecurityProperties(Map<String, Object> props) {
+        if (securityProtocol != null && !securityProtocol.isEmpty()) {
+            props.put("security.protocol", securityProtocol);
+        }
+        if (saslMechanism != null && !saslMechanism.isEmpty()) {
+            props.put("sasl.mechanism", saslMechanism);
+        }
+        if (saslUsername != null && !saslUsername.isEmpty() && saslPassword != null && !saslPassword.isEmpty()) {
+            String jaasConfig = String.format(
+                "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";",
+                saslUsername, saslPassword
+            );
+            props.put("sasl.jaas.config", jaasConfig);
+        }
+    }
 
     /**
      * Create admin notification topic
@@ -84,6 +116,10 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.ACKS_CONFIG, "all");
         configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
         configProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        
+        // Add cloud security properties if configured
+        addSecurityProperties(configProps);
+        
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
@@ -109,6 +145,10 @@ public class KafkaConfig {
         configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, NotificationEvent.class.getName());
+        
+        // Add cloud security properties if configured
+        addSecurityProperties(configProps);
+        
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 
