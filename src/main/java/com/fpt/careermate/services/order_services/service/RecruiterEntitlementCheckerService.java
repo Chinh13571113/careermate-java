@@ -5,6 +5,7 @@ import com.fpt.careermate.common.constant.EntitlementCode;
 import com.fpt.careermate.common.constant.PackageCode;
 import com.fpt.careermate.common.constant.RecruiterEntitlementCode;
 import com.fpt.careermate.common.constant.RecruiterPackageCode;
+import com.fpt.careermate.common.constant.StatusInvoice;
 import com.fpt.careermate.common.util.CoachUtil;
 import com.fpt.careermate.services.job_services.repository.JobPostingRepo;
 import com.fpt.careermate.services.order_services.domain.*;
@@ -57,16 +58,16 @@ public class RecruiterEntitlementCheckerService {
         return entitlement != null && entitlement.isEnabled();
     }
 
-    // Khi có recruiter mới, kiểm tra recruiterInvoice == null hoặc active == false là Free
+    // Khi có recruiter mới, kiểm tra recruiterInvoice == null hoặc active == false hoặc status != PAID là BASIC
     private boolean checkBasicPackage() {
         Recruiter currentRecruiter = coachUtil.getCurrentRecruiter();
         RecruiterInvoice recruiterInvoice = currentRecruiter.getRecruiterInvoice();
 
-        if(recruiterInvoice == null || !recruiterInvoice.isActive()) {
-            return true; // recruiter chưa có package active → coi như BASIC
+        if(recruiterInvoice == null || !recruiterInvoice.isActive() || !StatusInvoice.PAID.equals(recruiterInvoice.getStatus())) {
+            return true; // recruiter chưa có package active hoặc chưa thanh toán → coi như BASIC
         }
 
-        return false;  // Recruiter đã có package active
+        return false;  // Recruiter đã có package active và đã thanh toán
     }
 
     /**
@@ -117,5 +118,12 @@ public class RecruiterEntitlementCheckerService {
 
         // Chỉ cho phép post nếu chưa vượt giới hạn trong tháng
         return appliedCountThisMonth < limit;
+    }
+
+    /**
+     * Kiểm tra recruiter có quyền dùng tính năng CV VIEW không?
+     */
+    public boolean canViewCV() {
+        return core(RecruiterEntitlementCode.CV_VIEW);
     }
 }

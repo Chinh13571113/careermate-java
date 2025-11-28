@@ -63,4 +63,11 @@ public interface JobPostingRepo extends JpaRepository<JobPosting, Integer> {
     int countByRecruiterAndMonth(@Param("recruiterId") int recruiterId,
                                  @Param("month") int month,
                                  @Param("year") int year);
+
+    // New: Fetch a job posting with its jobDescriptions and associated jdSkill eagerly to avoid lazy loading issues
+    @Query("SELECT DISTINCT jp FROM job_posting jp " +
+           "LEFT JOIN FETCH jp.jobDescriptions jd " +
+           "LEFT JOIN FETCH jd.jdSkill " +
+           "WHERE jp.id = :id")
+    Optional<JobPosting> fetchByIdWithSkills(@Param("id") int id);
 }

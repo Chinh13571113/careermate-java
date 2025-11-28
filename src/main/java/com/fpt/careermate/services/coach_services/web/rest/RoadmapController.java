@@ -27,22 +27,6 @@ public class RoadmapController {
 
     RoadmapImp roadmapImp;
 
-    @PostMapping()
-    @Operation(description = """
-            Do not use this API
-            Need login as ADMIN to access
-            """)
-    public ApiResponse<Void> addRoadmap(
-            @RequestParam String nameRoadmap,
-            @RequestParam String fileName)
-    {
-        roadmapImp.addRoadmap(nameRoadmap, fileName);
-        return ApiResponse.<Void>builder()
-                .code(200)
-                .message("success")
-                .build();
-    }
-
     @GetMapping()
     @Operation(description = """
             Get roadmap by name
@@ -102,6 +86,23 @@ public class RoadmapController {
     {
         return ApiResponse.<List<RecommendedRoadmapResponse>>builder()
                 .result(roadmapImp.recommendRoadmap(role))
+                .code(200)
+                .message("success")
+                .build();
+    }
+
+    @DeleteMapping("/reset")
+    @Operation(description = """
+            Reset recommended roadmap collection
+            input: none
+            output: success
+            Need login as ADMIN to access this API
+            DO NOT USE IN PRODUCTION
+            """)
+    public ApiResponse<Void> resetRoadmapCollection()
+    {
+        roadmapImp.resetRoadmapCollection();
+        return ApiResponse.<Void>builder()
                 .code(200)
                 .message("success")
                 .build();

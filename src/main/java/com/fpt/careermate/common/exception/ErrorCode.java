@@ -87,6 +87,8 @@ public enum ErrorCode {
     JOB_FEEDBACK_NOT_FOUND(6017, "Job feedback not found", HttpStatus.NOT_FOUND),
     INVALID_FEEDBACK_TYPE(6018, "Invalid feedback type. Must be one of: like, dislike, save, view",
             HttpStatus.BAD_REQUEST),
+    CANNOT_CREATE_JOB_POSTING_PROPERTY(6019, "Cannot create job posting property", HttpStatus.BAD_REQUEST),
+    CANNOT_CREATE_JOB_POSTING_COLLECTION(6020, "Cannot create job posting collection", HttpStatus.BAD_REQUEST),
 
     // 70xx: Coach
     LESSON_NOT_FOUND(7000, "Lesson not found", HttpStatus.NOT_FOUND),
@@ -94,6 +96,7 @@ public enum ErrorCode {
     ROADMAP_NOT_FOUND(7002, "Roadmap not found", HttpStatus.NOT_FOUND),
     TOPIC_NOT_FOUND(7003, "Topic not found", HttpStatus.NOT_FOUND),
     SUBTOPIC_NOT_FOUND(7004, "Subtopic not found", HttpStatus.NOT_FOUND),
+    CANNOT_CREATE_ROADMAP_PROPERTY(7005, "Cannot create roadmap property", HttpStatus.BAD_REQUEST),
 
     BLOG_NOT_FOUND(1010, "Blog not found", HttpStatus.NOT_FOUND),
     BLOG_INVALID_STATUS(1011, "Invalid blog status", HttpStatus.BAD_REQUEST),
@@ -148,6 +151,14 @@ public enum ErrorCode {
     CANNOT_DELETE_MY_RECRUITER_INVOICE(
             2008, "Cannot delete RecruiterInvoice if status is not ACTIVE",
             HttpStatus.FORBIDDEN),
+
+    // 90xx: Interview
+    INTERVIEW_SESSION_NOT_FOUND(9000, "Interview session not found", HttpStatus.NOT_FOUND),
+    INTERVIEW_SESSION_ALREADY_COMPLETED(9001, "Interview session is already completed", HttpStatus.BAD_REQUEST),
+    INTERVIEW_QUESTION_NOT_FOUND(9002, "Interview question not found", HttpStatus.NOT_FOUND),
+    INTERVIEW_SESSION_FORBIDDEN(9003, "You are not allowed to access this interview session", HttpStatus.FORBIDDEN),
+    INTERVIEW_QUESTION_ALREADY_ANSWERED(9004, "This question has already been answered", HttpStatus.BAD_REQUEST),
+        INTERVIEW_SESSION_NOT_ONGOING(9005, "Interview session is not ongoing", HttpStatus.BAD_REQUEST),
 
     // 90xx: Job Application
     JOB_APPLY_NOT_FOUND(9000, "Job application not found", HttpStatus.NOT_FOUND),

@@ -4,8 +4,6 @@ server:
 spring:
   #  main:
   #    web-application-type: none
-
-
   application:
     name: careermate
   datasource:
@@ -130,4 +128,8 @@ huggingface:
   # Model is NOT specified - Weaviate will use its default model (all-MiniLM-L6-v2)
   # through the Weaviate Embeddings Inference API
 
-  
+app:
+  seeder:
+    roadmap:
+      bucket-name: ${BUCKET_NAME:default}
+      prefix: ${BUCKET_PREFIX:default}
