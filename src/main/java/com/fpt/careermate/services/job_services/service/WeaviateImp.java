@@ -27,7 +27,7 @@ import java.util.Map;
 public class WeaviateImp {
 
     // Constants to avoid duplicated literals
-    private static final String TEXT2VEC_MODULE = "text2vec-huggingface";
+    private static final String TEXT2VEC_MODULE = "text2vec-palm";
     private static final String VECTORIZE_PROPERTY_NAME = "vectorizePropertyName";
 
     WeaviateClient weaviateClient;
@@ -125,20 +125,20 @@ public class WeaviateImp {
             Thread.currentThread().interrupt();
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         } catch (Exception e) {
-            log.error("Error resetting Roadmap collection: {}", e.getMessage(), e);
+            log.error("Error resetting Job Posting collection: {}", e.getMessage(), e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
 
     private void createJobPostingCollection(String collectionName) {
         Map<String, Object> moduleConfig = new HashMap<>();
-        Map<String, Object> text2vecHuggingface = new HashMap<>();
-        text2vecHuggingface.put("vectorizeClassName", false);
-        text2vecHuggingface.put("model", "sentence-transformers/all-MiniLM-L6-v2");
-        moduleConfig.put(TEXT2VEC_MODULE, text2vecHuggingface);
+        Map<String, Object> text2vecGoogleAistudio = new HashMap<>();
+        text2vecGoogleAistudio.put("vectorizeClassName", false);
+        text2vecGoogleAistudio.put("model", "gemini-embedding-001");
+        moduleConfig.put(TEXT2VEC_MODULE, text2vecGoogleAistudio);
 
         WeaviateClass weaviateClass =
-                io.weaviate.client.v1.schema.model.WeaviateClass.builder()
+                WeaviateClass.builder()
                         .className(collectionName)
                         .description("A collection of job posting.")
                         .vectorizer(TEXT2VEC_MODULE)
@@ -150,7 +150,9 @@ public class WeaviateImp {
                 .run();
 
         if (result.hasErrors()) {
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+            log.error("Error creating Job Posting collection: {}",
+                    result.getError().getMessages());
+            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_COLLECTION);
         }
     }
 
@@ -168,7 +170,7 @@ public class WeaviateImp {
                 .run();
 
         if (r1.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
         }
 
         // title: text
@@ -191,7 +193,7 @@ public class WeaviateImp {
                 .run();
 
         if (r2.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
         }
 
         // description: text
@@ -214,7 +216,7 @@ public class WeaviateImp {
                 .run();
 
         if (r3.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
         }
 
         // skills: text[]
@@ -237,7 +239,7 @@ public class WeaviateImp {
                 .run();
 
         if (r4.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
         }
 
         // address: text
@@ -260,7 +262,7 @@ public class WeaviateImp {
                 .run();
 
         if (r5.hasErrors()) {
-            throw new AppException(ErrorCode.CANNOT_CREATE_ROADMAP_PROPERTY);
+            throw new AppException(ErrorCode.CANNOT_CREATE_JOB_POSTING_PROPERTY);
         }
     }
 
