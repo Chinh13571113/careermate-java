@@ -2,11 +2,15 @@ package com.fpt.careermate.services.job_services.service;
 
 import com.fpt.careermate.common.constant.StatusJobApply;
 import com.fpt.careermate.common.response.PageResponse;
+import com.fpt.careermate.services.account_services.domain.Account;
+import com.fpt.careermate.services.authentication_services.service.AuthenticationImp;
 import com.fpt.careermate.services.profile_services.domain.Candidate;
 import com.fpt.careermate.services.job_services.domain.JobApply;
+import com.fpt.careermate.services.job_services.domain.JobApplyStatusHistory;
 import com.fpt.careermate.services.job_services.domain.JobPosting;
 import com.fpt.careermate.services.profile_services.repository.CandidateRepo;
 import com.fpt.careermate.services.job_services.repository.JobApplyRepo;
+import com.fpt.careermate.services.job_services.repository.JobApplyStatusHistoryRepo;
 import com.fpt.careermate.services.job_services.repository.JobPostingRepo;
 import com.fpt.careermate.services.job_services.service.dto.request.JobApplyRequest;
 import com.fpt.careermate.services.job_services.service.dto.response.JobApplyResponse;
@@ -16,6 +20,8 @@ import com.fpt.careermate.common.exception.AppException;
 import com.fpt.careermate.common.exception.ErrorCode;
 import com.fpt.careermate.services.kafka.dto.NotificationEvent;
 import com.fpt.careermate.services.kafka.producer.NotificationProducer;
+import com.fpt.careermate.services.recruiter_services.domain.Recruiter;
+import com.fpt.careermate.services.recruiter_services.repository.RecruiterRepo;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +53,9 @@ public class JobApplyImp implements JobApplyService {
         CandidateRepo candidateRepo;
         JobApplyMapper jobApplyMapper;
         NotificationProducer notificationProducer;
+        JobApplyStatusHistoryRepo statusHistoryRepo;
+        AuthenticationImp authenticationImp;
+        RecruiterRepo recruiterRepo;
 
         @Override
         @Transactional
@@ -179,10 +188,23 @@ public class JobApplyImp implements JobApplyService {
 
                 StatusJobApply previousStatus = jobApply.getStatus();
 
-                // Update status if provided
+                // Validate status transition
+                if (!isValidStatusTransition(previousStatus, status)) {
+                        throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
+                }
+
+                // Update status and relevant timestamps
                 jobApply.setStatus(status);
+                jobApply.setStatusChangedAt(LocalDateTime.now());
+                
+                // Auto-set timestamps based on status
+                updateTimestampsForStatus(jobApply, status);
 
                 JobApply updatedJobApply = jobApplyRepo.save(jobApply);
+                
+                // Record status change in history
+                recordStatusChange(updatedJobApply, previousStatus, status, null, null);
+                
                 log.info("Job application ID: {} updated from {} to {}", id, previousStatus, status);
 
                 // Send notification to candidate about status change
@@ -191,6 +213,17 @@ public class JobApplyImp implements JobApplyService {
                 } catch (Exception e) {
                         log.error("Failed to send application status change notification: {}", e.getMessage(), e);
                         // Don't fail the update process if notification fails
+                }
+
+                // Handle business rules when candidate is hired (ACCEPTED status)
+                if (status == StatusJobApply.ACCEPTED) {
+                        try {
+                                handleHireBusinessRules(updatedJobApply);
+                        } catch (Exception e) {
+                                log.error("Failed to process hire business rules for application {}: {}", 
+                                        id, e.getMessage(), e);
+                                // Don't fail the main update if auto-withdraw fails
+                        }
                 }
 
                 return jobApplyMapper.toJobApplyResponse(updatedJobApply);
@@ -403,4 +436,354 @@ public class JobApplyImp implements JobApplyService {
                 log.info("✅ Sent application status change notification to candidate {} for status: {}", candidateId,
                                 newStatus);
         }
+        
+        // ==================== STATUS TRANSITION VALIDATION ====================
+        
+        /**
+         * Validate if status transition is allowed
+         * Prevents invalid state changes (e.g., REJECTED → APPROVED)
+         */
+        private boolean isValidStatusTransition(StatusJobApply from, StatusJobApply to) {
+                // Same status is always allowed (no-op)
+                if (from == to) {
+                        return true;
+                }
+                
+                // Define allowed transitions
+                switch (from) {
+                        case SUBMITTED:
+                                // Can move to reviewing, interviewed, approved, rejected, or no response
+                                return to == StatusJobApply.REVIEWING 
+                                    || to == StatusJobApply.INTERVIEW_SCHEDULED
+                                    || to == StatusJobApply.APPROVED 
+                                    || to == StatusJobApply.REJECTED
+                                    || to == StatusJobApply.NO_RESPONSE
+                                    || to == StatusJobApply.WITHDRAWN;
+                                
+                        case REVIEWING:
+                                // Can move to interview scheduled, approved, rejected
+                                return to == StatusJobApply.INTERVIEW_SCHEDULED
+                                    || to == StatusJobApply.APPROVED 
+                                    || to == StatusJobApply.REJECTED
+                                    || to == StatusJobApply.WITHDRAWN;
+                                
+                        case INTERVIEW_SCHEDULED:
+                                // Can move to interviewed, approved, rejected
+                                return to == StatusJobApply.INTERVIEWED
+                                    || to == StatusJobApply.APPROVED 
+                                    || to == StatusJobApply.REJECTED
+                                    || to == StatusJobApply.WITHDRAWN;
+                                
+                        case INTERVIEWED:
+                                // Can move to approved, rejected, or schedule another interview
+                                return to == StatusJobApply.INTERVIEW_SCHEDULED
+                                    || to == StatusJobApply.APPROVED 
+                                    || to == StatusJobApply.REJECTED;
+                                
+                        case APPROVED:
+                                // Can move to accepted (hired) or rejected (changed mind)
+                                return to == StatusJobApply.ACCEPTED
+                                    || to == StatusJobApply.REJECTED
+                                    || to == StatusJobApply.WITHDRAWN;
+                                
+                        case ACCEPTED:
+                                // Once hired, can only be banned or stay accepted
+                                return to == StatusJobApply.BANNED;
+                                
+                        case REJECTED:
+                        case BANNED:
+                        case NO_RESPONSE:
+                        case WITHDRAWN:
+                                // Terminal states - cannot transition out
+                                return false;
+                                
+                        default:
+                                return false;
+                }
+        }
+        
+        /**
+         * Auto-set timestamps when status changes
+         */
+        private void updateTimestampsForStatus(JobApply jobApply, StatusJobApply newStatus) {
+                LocalDateTime now = LocalDateTime.now();
+                
+                switch (newStatus) {
+                        case INTERVIEW_SCHEDULED:
+                                if (jobApply.getInterviewScheduledAt() == null) {
+                                        jobApply.setInterviewScheduledAt(now);
+                                }
+                                jobApply.setLastContactAt(now);
+                                break;
+                                
+                        case INTERVIEWED:
+                                if (jobApply.getInterviewedAt() == null) {
+                                        jobApply.setInterviewedAt(now);
+                                }
+                                jobApply.setLastContactAt(now);
+                                break;
+                                
+                        case ACCEPTED:
+                                if (jobApply.getHiredAt() == null) {
+                                        jobApply.setHiredAt(now);
+                                }
+                                jobApply.setLastContactAt(now);
+                                break;
+                                
+                        case REVIEWING:
+                        case APPROVED:
+                        case REJECTED:
+                                jobApply.setLastContactAt(now);
+                                break;
+                                
+                        case NO_RESPONSE:
+                                // Don't update lastContactAt - that's the point
+                                break;
+                }
+        }
+        
+        /**
+         * Record status change in history table
+         */
+        private void recordStatusChange(JobApply jobApply, StatusJobApply previousStatus, 
+                                       StatusJobApply newStatus, Integer changedByUserId, String reason) {
+                JobApplyStatusHistory history = JobApplyStatusHistory.builder()
+                        .jobApply(jobApply)
+                        .previousStatus(previousStatus)
+                        .newStatus(newStatus)
+                        .changedAt(LocalDateTime.now())
+                        .changedByUserId(changedByUserId)
+                        .changeReason(reason)
+                        .build();
+                
+                statusHistoryRepo.save(history);
+                log.info("📝 Recorded status change: JobApply {} from {} to {}", 
+                        jobApply.getId(), previousStatus, newStatus);
+        }
+
+        // ==================== AUTO-WITHDRAW ON HIRE ====================
+
+        /**
+         * Active statuses that should be auto-withdrawn when candidate is hired elsewhere.
+         * These represent applications that are still "in progress" and not yet finalized.
+         */
+        private static final List<StatusJobApply> ACTIVE_PENDING_STATUSES = List.of(
+                StatusJobApply.SUBMITTED,
+                StatusJobApply.REVIEWING,
+                StatusJobApply.INTERVIEW_SCHEDULED,
+                StatusJobApply.INTERVIEWED,
+                StatusJobApply.APPROVED
+        );
+
+        /**
+         * Handle business rules when a candidate is hired (status changed to ACCEPTED).
+         * This automatically withdraws all other pending applications for the same candidate.
+         * 
+         * Business Rule: When a candidate accepts a job offer, all their other active applications
+         * are automatically withdrawn to prevent conflicts and maintain data integrity.
+         * 
+         * @param hiredApplication The application that was just marked as ACCEPTED/hired
+         */
+        private void handleHireBusinessRules(JobApply hiredApplication) {
+                Integer candidateId = hiredApplication.getCandidate().getCandidateId();
+                Integer hiredApplicationId = hiredApplication.getId();
+                String hiredJobTitle = hiredApplication.getJobPosting().getTitle();
+                String hiredCompanyName = hiredApplication.getJobPosting().getRecruiter().getCompanyName();
+
+                log.info("🎯 Processing hire business rules for candidate {} hired at {}", 
+                        candidateId, hiredCompanyName);
+
+                // Find all other active/pending applications for this candidate
+                List<JobApply> pendingApplications = jobApplyRepo.findActivePendingApplicationsByCandidate(
+                        candidateId, 
+                        hiredApplicationId, 
+                        ACTIVE_PENDING_STATUSES
+                );
+
+                if (pendingApplications.isEmpty()) {
+                        log.info("No pending applications to withdraw for candidate {}", candidateId);
+                        return;
+                }
+
+                log.info("Found {} pending applications to auto-withdraw for candidate {}", 
+                        pendingApplications.size(), candidateId);
+
+                int withdrawnCount = 0;
+                for (JobApply application : pendingApplications) {
+                        try {
+                                StatusJobApply previousStatus = application.getStatus();
+                                
+                                // Update status to WITHDRAWN
+                                application.setStatus(StatusJobApply.WITHDRAWN);
+                                application.setStatusChangedAt(LocalDateTime.now());
+                                jobApplyRepo.save(application);
+
+                                // Record in history with reason
+                                String withdrawReason = String.format(
+                                        "Auto-withdrawn: Candidate hired for '%s' at %s",
+                                        hiredJobTitle, hiredCompanyName
+                                );
+                                recordStatusChange(application, previousStatus, StatusJobApply.WITHDRAWN, 
+                                        null, withdrawReason);
+
+                                // Send notification to recruiter about auto-withdrawal
+                                sendAutoWithdrawNotificationToRecruiter(application, hiredJobTitle, hiredCompanyName);
+
+                                withdrawnCount++;
+                                log.info("✅ Auto-withdrew application {} for job '{}' (was: {})", 
+                                        application.getId(), 
+                                        application.getJobPosting().getTitle(),
+                                        previousStatus);
+
+                        } catch (Exception e) {
+                                log.error("Failed to auto-withdraw application {}: {}", 
+                                        application.getId(), e.getMessage());
+                                // Continue processing other applications
+                        }
+                }
+
+                log.info("🎉 Auto-withdrew {} of {} pending applications for candidate {}", 
+                        withdrawnCount, pendingApplications.size(), candidateId);
+                
+                // Send summary notification to candidate about auto-withdrawals
+                if (withdrawnCount > 0) {
+                        sendAutoWithdrawSummaryToCandidate(hiredApplication, withdrawnCount);
+                }
+        }
+
+        /**
+         * Send notification to recruiter when a candidate auto-withdraws from their job posting.
+         */
+        private void sendAutoWithdrawNotificationToRecruiter(JobApply withdrawnApplication, 
+                                                              String hiredJobTitle, String hiredCompanyName) {
+                String recruiterEmail = withdrawnApplication.getJobPosting().getRecruiter().getAccount().getEmail();
+                Integer recruiterId = withdrawnApplication.getJobPosting().getRecruiter().getId();
+
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("applicationId", withdrawnApplication.getId());
+                metadata.put("jobPostingId", withdrawnApplication.getJobPosting().getId());
+                metadata.put("jobTitle", withdrawnApplication.getJobPosting().getTitle());
+                metadata.put("candidateName", withdrawnApplication.getFullName());
+                metadata.put("reason", "HIRED_ELSEWHERE");
+                metadata.put("hiredJobTitle", hiredJobTitle);
+                metadata.put("hiredCompanyName", hiredCompanyName);
+
+                String message = String.format(
+                        "A candidate has withdrawn their application.\n\n" +
+                        "📋 Job Posting: %s\n" +
+                        "👤 Candidate: %s\n" +
+                        "ℹ️ Reason: Candidate has been hired at another company (%s)\n\n" +
+                        "The application status has been automatically updated to WITHDRAWN.",
+                        withdrawnApplication.getJobPosting().getTitle(),
+                        withdrawnApplication.getFullName(),
+                        hiredCompanyName
+                );
+
+                NotificationEvent event = NotificationEvent.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .recipientEmail(recruiterEmail)
+                        .recipientId(String.valueOf(recruiterId))
+                        .category("RECRUITER")
+                        .eventType("APPLICATION_AUTO_WITHDRAWN")
+                        .title("Application Withdrawn - Candidate Hired Elsewhere")
+                        .subject("Application Withdrawn: " + withdrawnApplication.getFullName())
+                        .message(message)
+                        .metadata(metadata)
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+                notificationProducer.sendRecruiterNotification(event);
+        }
+
+        /**
+         * Send summary notification to candidate about their auto-withdrawn applications.
+         */
+        private void sendAutoWithdrawSummaryToCandidate(JobApply hiredApplication, int withdrawnCount) {
+                String candidateEmail = hiredApplication.getCandidate().getAccount().getEmail();
+                Integer candidateId = hiredApplication.getCandidate().getCandidateId();
+                String hiredCompanyName = hiredApplication.getJobPosting().getRecruiter().getCompanyName();
+                String hiredJobTitle = hiredApplication.getJobPosting().getTitle();
+
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("hiredApplicationId", hiredApplication.getId());
+                metadata.put("hiredJobTitle", hiredJobTitle);
+                metadata.put("hiredCompanyName", hiredCompanyName);
+                metadata.put("withdrawnCount", withdrawnCount);
+
+                String message = String.format(
+                        "Congratulations on your new job! 🎉\n\n" +
+                        "You've been hired for the position of '%s' at %s.\n\n" +
+                        "As a result, %d of your other pending application(s) have been automatically withdrawn " +
+                        "to help you focus on your new opportunity.\n\n" +
+                        "We wish you all the best in your new role!",
+                        hiredJobTitle,
+                        hiredCompanyName,
+                        withdrawnCount
+                );
+
+                NotificationEvent event = NotificationEvent.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .recipientEmail(candidateEmail)
+                        .recipientId(String.valueOf(candidateId))
+                        .category("CANDIDATE")
+                        .eventType("APPLICATIONS_AUTO_WITHDRAWN")
+                        .title("Your Applications Have Been Updated")
+                        .subject("Congratulations! " + withdrawnCount + " application(s) auto-withdrawn")
+                        .message(message)
+                        .metadata(metadata)
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+                notificationProducer.sendNotification("candidate-notifications", event);
+        }
+
+        // Get current recruiter helper method
+        private Recruiter getMyRecruiter() {
+                Account currentAccount = authenticationImp.findByEmail();
+                Recruiter recruiter = recruiterRepo.findByAccount_Id(currentAccount.getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.RECRUITER_NOT_FOUND));
+
+                // Check if recruiter is verified (APPROVED status)
+                if (!"APPROVED".equals(recruiter.getVerificationStatus())) {
+                        throw new AppException(ErrorCode.RECRUITER_NOT_VERIFIED);
+                }
+
+                return recruiter;
+        }
+
+        @Override
+        @PreAuthorize("hasRole('RECRUITER')")
+        public List<JobApplyResponse> getJobAppliesByRecruiter() {
+                Recruiter recruiter = getMyRecruiter();
+                return jobApplyRepo.findByRecruiterId(recruiter.getId()).stream()
+                        .map(jobApplyMapper::toJobApplyResponse)
+                        .collect(Collectors.toList());
+        }
+
+        @Override
+        @PreAuthorize("hasRole('RECRUITER')")
+        public PageResponse<JobApplyResponse> getJobAppliesByRecruiterWithFilter(
+                        StatusJobApply status,
+                        int page,
+                        int size) {
+                Recruiter recruiter = getMyRecruiter();
+                
+                Pageable pageable = PageRequest.of(page, size, Sort.by("createAt").descending());
+                Page<JobApply> jobApplyPage = jobApplyRepo.findByRecruiterId(recruiter.getId(), pageable);
+
+                // Filter by status if provided
+                List<JobApplyResponse> filteredList = jobApplyPage.getContent().stream()
+                        .filter(ja -> status == null || ja.getStatus() == status)
+                        .map(jobApplyMapper::toJobApplyResponse)
+                        .collect(Collectors.toList());
+
+                return new PageResponse<>(
+                        filteredList,
+                        page,
+                        size,
+                        jobApplyPage.getTotalElements(),
+                        jobApplyPage.getTotalPages()
+                );
+        }
 }
+
