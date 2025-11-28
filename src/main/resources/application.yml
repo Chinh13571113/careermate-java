@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: {PORT:8080}
   address: 0.0.0.0
 spring:
   #  main:
@@ -15,6 +15,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+      jdbc:
+        time-zone: Asia/Ho_Chi_Minh
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
