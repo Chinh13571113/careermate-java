@@ -20,7 +20,7 @@ public class WorkExperienceRequest {
     String jobTitle;
     @NotBlank(message = "Company name is required")
     String company;
-    @NotBlank(message = "Start Date is required")
+    @NotNull(message = "Start Date is required")
     LocalDate startDate;
     @NotBlank(message = "End Date is required")
     LocalDate endDate;
