@@ -7,10 +7,9 @@ spring:
   application:
     name: careermate
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5439}/${DB_NAME:MyPostgresDB}
-#    url: jdbc:postgresql://${NEON_URL}
-    username: ${DB_USER_LOCAL:root}
-    password: ${DB_PASSWORD_LOCAL:123456}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER_LOCAL}
+    password: ${DB_PASSWORD_LOCAL}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
