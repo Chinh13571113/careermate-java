@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
                 contact = @Contact(name = "Your Name", email = "your.email@example.com")
         ),
         servers = {
-                @Server(url = "http://localhost:8080", description = "Local Server")
+                @Server(url = "/", description = "Current Server (Auto-detected)")
         },
 
         security = {@SecurityRequirement(name = "bearerToken")}

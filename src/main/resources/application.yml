@@ -1,6 +1,8 @@
 server:
   port: {PORT:8080}
   address: 0.0.0.0
+  # Enable forward headers to detect correct scheme (http/https) and host
+  forward-headers-strategy: framework
 spring:
   #  main:
   #    web-application-type: none
@@ -134,3 +136,16 @@ app:
     roadmap:
       bucket-name: ${BUCKET_NAME:default}
       prefix: ${BUCKET_PREFIX:default}
+
+# Springdoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    # Enable forward headers to detect the correct server URL when behind a proxy/load balancer
+    use-root-path: true
+  # Use forwarded headers (X-Forwarded-Host, X-Forwarded-Proto, X-Forwarded-Port)
+  # This is important for Cloud Run and other cloud platforms
+  use-fqn: true
+
