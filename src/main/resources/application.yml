@@ -1,20 +1,22 @@
 server:
-  port: 8080
+  port: {PORT:8080}
   address: 0.0.0.0
+  forward-headers-strategy: framework
 spring:
   #  main:
   #    web-application-type: none
   application:
     name: careermate
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5439}/${DB_NAME:MyPostgresDB}
-#    url: jdbc:postgresql://${NEON_URL}
-    username: ${DB_USER_LOCAL:root}
-    password: ${DB_PASSWORD_LOCAL:123456}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER_LOCAL}
+    password: ${DB_PASSWORD_LOCAL}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
+      jdbc:
+        time-zone: Asia/Ho_Chi_Minh
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -133,3 +135,26 @@ app:
     roadmap:
       bucket-name: ${BUCKET_NAME:default}
       prefix: ${BUCKET_PREFIX:default}
+  swagger:
+    server:
+      # Leave empty for local development (will use localhost)
+      # Set this in production environment:
+      url: ${SWAGGER_SERVER_URL:}
+
+# Springdoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    # Disable trying to fetch remote config
+    disable-swagger-default-url: true
+    # Set the base URL to use for API calls
+    url: /v3/api-docs
+    # Enable forward headers to detect the correct server URL when behind a proxy/load balancer
+    use-root-path: false
+  # Use forwarded headers (X-Forwarded-Host, X-Forwarded-Proto, X-Forwarded-Port)
+  # This is important for Cloud Run and other cloud platforms
+  use-fqn: true
+
