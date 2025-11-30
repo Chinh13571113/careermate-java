@@ -3,16 +3,111 @@
 ## Vấn đề
 Ở local thì roadmap thêm vào Postgres được, nhưng khi deploy lên Google Cloud Run thì log "→ Using Google Cloud credentials from environment variable" có chạy mà không thấy thêm vào Postgres trong Google Cloud SQL.
 
+## ⚠️ LỖI THƯỜNG GẶP KHI DEPLOY
+
+### ❌ Lỗi: Log dừng lại ngay sau "✓ Successfully loaded credentials"
+```
+RoadmapSeeder Constructor Started ===
+→ Credentials JSON length: 2401 characters
+✓ Successfully loaded credentials from environment variable
+```
+
+**KHÔNG có log:**
+- "✓ Google Cloud Storage initialized successfully"
+- "RoadmapSeeder initialized - Storage: OK"
+
+**Error messages:**
+```
+org.postgresql.util.PSQLException: An I/O error occurred while sending to the backend.
+java.lang.IllegalArgumentException: 'value' must not be null
+```
+
+**Nguyên nhân:**
+- **Database environment variables KHÔNG được set** trên Cloud Run
+- Spring Boot cố gắng kết nối database với giá trị NULL
+- Constructor bị fail trước khi Storage được assign
+- RoadmapRepo injection fail do không connect được database
+
+**Cách khắc phục:**
+
+1. **Kiểm tra biến môi trường trên Cloud Run:**
+   ```bash
+   gcloud run services describe [SERVICE_NAME] --region=[REGION] --format="value(spec.template.spec.containers[0].env)"
+   ```
+
+2. **Các biến BẮT BUỘC phải set:**
+   - `DB_HOST` - Hostname của Cloud SQL hoặc Unix socket path
+   - `DB_PORT` - Port của PostgreSQL (thường là 5432)
+   - `DB_NAME` - Tên database
+   - `DB_USER_LOCAL` - Username để connect
+   - `DB_PASSWORD_LOCAL` - Password để connect
+
+3. **Đối với Cloud SQL trên Cloud Run, có 2 cách:**
+
+   **Option A: Dùng Unix Socket (Recommended)**
+   ```bash
+   gcloud run deploy [SERVICE_NAME] \
+     --set-env-vars="DB_HOST=/cloudsql/[PROJECT_ID]:[REGION]:[INSTANCE_NAME]" \
+     --set-env-vars="DB_PORT=5432" \
+     --set-env-vars="DB_NAME=[DATABASE_NAME]" \
+     --set-env-vars="DB_USER_LOCAL=[USERNAME]" \
+     --set-env-vars="DB_PASSWORD_LOCAL=[PASSWORD]" \
+     --add-cloudsql-instances [PROJECT_ID]:[REGION]:[INSTANCE_NAME]
+   ```
+
+   **Option B: Dùng Cloud SQL Connector**
+   Update `application.yml`:
+   ```yaml
+   spring:
+     datasource:
+       url: jdbc:postgresql:///${DB_NAME}?cloudSqlInstance=${CLOUD_SQL_INSTANCE}&socketFactory=com.google.cloud.sql.postgres.SocketFactory
+       username: ${DB_USER}
+       password: ${DB_PASSWORD}
+   ```
+   
+   Và set env vars:
+   ```bash
+   CLOUD_SQL_INSTANCE=[PROJECT_ID]:[REGION]:[INSTANCE_NAME]
+   DB_NAME=[DATABASE_NAME]
+   DB_USER=[USERNAME]
+   DB_PASSWORD=[PASSWORD]
+   ```
+
+4. **Verify Cloud SQL connection được add:**
+   ```bash
+   gcloud run services describe [SERVICE_NAME] --region=[REGION] --format="value(spec.template.spec.containers[0].volumeMounts)"
+   ```
+
+5. **Check Cloud SQL instance đang chạy:**
+   ```bash
+   gcloud sql instances describe [INSTANCE_NAME]
+   ```
+
 ## Các log đã thêm để debug
 
 ### 1. Constructor Logs
 ```
 === RoadmapSeeder Constructor Started ===
+→ Checking database environment variables:
+  - DB_HOST: SET/NOT SET
+  - DB_PORT: SET/NOT SET
+  - DB_NAME: SET/NOT SET
+  - DB_USER_LOCAL: SET/NOT SET
+  - DB_PASSWORD_LOCAL: SET/NOT SET
 → Using Google Cloud credentials from environment variable
 → Credentials JSON length: {số ký tự} characters
 ✓ Successfully loaded credentials from environment variable
+→ Building Storage with credentials...
 ✓ Google Cloud Storage initialized successfully
-RoadmapSeeder initialized - Storage: OK, RoadmapRepo: OK, WeaviateClient: OK
+→ Assigning storage field...
+→ Checking injected dependencies...
+  - RoadmapRepo injected: YES/NULL
+  - WeaviateClient injected: YES/NULL
+→ Assigning roadmapRepo field...
+✓ RoadmapRepo assigned successfully
+→ Assigning weaviateClient field...
+✓ WeaviateClient assigned successfully
+=== RoadmapSeeder initialized - Storage: OK, RoadmapRepo: OK, WeaviateClient: OK ===
 ```
 
 ### 2. Run Method Logs

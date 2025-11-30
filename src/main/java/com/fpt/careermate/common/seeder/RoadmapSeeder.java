@@ -54,6 +54,15 @@ public class RoadmapSeeder implements CommandLineRunner {
                          WeaviateClient weaviateClient,
                          ResourceLoader resourceLoader) {
         log.info("=== RoadmapSeeder Constructor Started ===");
+
+        // Log database environment variables
+        log.info("→ Checking database environment variables:");
+        log.info("  - DB_HOST: {}", System.getenv("DB_HOST") != null ? "SET" : "NOT SET");
+        log.info("  - DB_PORT: {}", System.getenv("DB_PORT") != null ? "SET" : "NOT SET");
+        log.info("  - DB_NAME: {}", System.getenv("DB_NAME") != null ? "SET" : "NOT SET");
+        log.info("  - DB_USER_LOCAL: {}", System.getenv("DB_USER_LOCAL") != null ? "SET" : "NOT SET");
+        log.info("  - DB_PASSWORD_LOCAL: {}", System.getenv("DB_PASSWORD_LOCAL") != null ? "SET" : "NOT SET");
+
         Storage tempStorage = null;
         try {
             GoogleCredentials credentials = null;
@@ -96,6 +105,7 @@ public class RoadmapSeeder implements CommandLineRunner {
             }
 
             if (credentials != null) {
+                log.info("→ Building Storage with credentials...");
                 tempStorage = StorageOptions.newBuilder()
                         .setCredentials(credentials)
                         .build()
@@ -113,11 +123,33 @@ public class RoadmapSeeder implements CommandLineRunner {
             log.warn("4. Service account has Storage Object Viewer role");
             log.warn("5. Service account has access to bucket");
         }
-        this.storage = tempStorage;
-        this.roadmapRepo = roadmapRepo;
-        this.weaviateClient = weaviateClient;
 
-        log.info("RoadmapSeeder initialized - Storage: {}, RoadmapRepo: {}, WeaviateClient: {}",
+        log.info("→ Assigning storage field...");
+        this.storage = tempStorage;
+
+        log.info("→ Checking injected dependencies...");
+        log.info("  - RoadmapRepo injected: {}", (roadmapRepo != null ? "YES" : "NULL"));
+        log.info("  - WeaviateClient injected: {}", (weaviateClient != null ? "YES" : "NULL"));
+
+        try {
+            log.info("→ Assigning roadmapRepo field...");
+            this.roadmapRepo = roadmapRepo;
+            log.info("✓ RoadmapRepo assigned successfully");
+        } catch (Exception e) {
+            log.error("✗ Failed to assign roadmapRepo: {}", e.getMessage(), e);
+            throw e;
+        }
+
+        try {
+            log.info("→ Assigning weaviateClient field...");
+            this.weaviateClient = weaviateClient;
+            log.info("✓ WeaviateClient assigned successfully");
+        } catch (Exception e) {
+            log.error("✗ Failed to assign weaviateClient: {}", e.getMessage(), e);
+            throw e;
+        }
+
+        log.info("=== RoadmapSeeder initialized - Storage: {}, RoadmapRepo: {}, WeaviateClient: {} ===",
             (storage != null ? "OK" : "NULL"),
             (roadmapRepo != null ? "OK" : "NULL"),
             (weaviateClient != null ? "OK" : "NULL"));
