@@ -23,16 +23,23 @@ public class FirebaseConfig {
         if (FirebaseApp.getApps().isEmpty()) {
             try {
                 InputStream serviceAccount;
-                // Fallback to classpath
-                ClassPathResource resource = new ClassPathResource("firebase-service-account.json");
-                if (!resource.exists()) {
-                    log.error(
-                            "❌ Firebase service account file not found! Please add firebase-service-account.json to src/main/resources/");
-                    throw new RuntimeException(
-                            "Firebase service account file not found: firebase-service-account.json");
+
+                // Try to get credentials from environment variable first (for Cloud Run)
+                String credentialsPath = System.getenv("FIREBASE_CREDENTIALS_JSON");
+                if (credentialsPath != null && !credentialsPath.isEmpty()) {
+                    serviceAccount = new FileInputStream(credentialsPath);
+                    log.info("Using Firebase credentials from environment variable: {}", credentialsPath);
+                } else {
+                    // Fallback to classpath
+                    ClassPathResource resource = new ClassPathResource("firebase-service-account.json");
+                    if (!resource.exists()) {
+                        log.error(
+                                "❌ Firebase service account file not found! Please add firebase-service-account.json to src/main/resources/");
+
+                    }
+                    serviceAccount = resource.getInputStream();
+                    log.info("Using Firebase credentials from classpath");
                 }
-                serviceAccount = resource.getInputStream();
-                log.info("Using Firebase credentials from classpath");
 
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(serviceAccount))

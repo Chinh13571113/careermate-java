@@ -10,10 +10,12 @@ import com.google.firebase.messaging.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +35,7 @@ public class FcmPushNotificationService {
 
     /**
      * Initialize Firebase Admin SDK on application startup.
-     * Uses service account credentials from resources folder.
+     * Uses service account credentials from environment variable or classpath.
      */
     @PostConstruct
     public void initializeFirebase() {
@@ -44,13 +46,22 @@ public class FcmPushNotificationService {
                 return;
             }
 
-            // Load service account credentials
-            String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
-            if (credentialsPath == null || credentialsPath.isEmpty()) {
-                credentialsPath = "src/main/resources/firebase-service-account.json";
-            }
+            InputStream serviceAccount;
 
-            FileInputStream serviceAccount = new FileInputStream(credentialsPath);
+            // Try to get credentials from environment variable first (for Cloud Run)
+            String credentialsPath = System.getenv("FIREBASE_CREDENTIALS_JSON");
+            if (credentialsPath != null && !credentialsPath.isEmpty()) {
+                serviceAccount = new FileInputStream(credentialsPath);
+                log.info("Using Firebase credentials from environment variable: {}", credentialsPath);
+            } else {
+                // Fallback to classpath
+                ClassPathResource resource = new ClassPathResource("firebase-service-account.json");
+                if (!resource.exists()) {
+                    log.error("❌ Firebase service account file not found! Please add firebase-service-account.json to src/main/resources/");
+                }
+                serviceAccount = resource.getInputStream();
+                log.info("Using Firebase credentials from classpath");
+            }
 
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
