@@ -86,6 +86,7 @@ public class JobPostingImp implements JobPostingService {
         Recruiter recruiter = getMyRecruiter();
 
         // Validate request - check duplicate title within same recruiter only
+        jobPostingValidator.checkDuplicateJobPostingTitle(request.getTitle(), recruiter.getId());
         jobPostingValidator.validateExpirationDate(request.getExpirationDate());
 
         JobPosting jobPosting = jobPostingMapper.toJobPosting(request);
