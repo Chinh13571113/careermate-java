@@ -267,6 +267,9 @@ public class JobPostingImp implements JobPostingService {
 
         jobPosting.setStatus(StatusJobPosting.PAUSED);
         jobPostingRepo.save(jobPosting);
+
+        // Delete from Weaviate
+        weaviateImp.deleteJobPosting(id);
     }
 
     // Get job posting stats for recruiter dashboard
