@@ -1,10 +1,7 @@
 package com.fpt.careermate.services.coach_services.web.rest;
 
 import com.fpt.careermate.common.response.ApiResponse;
-import com.fpt.careermate.services.coach_services.service.AdminRoadmapImp;
-import com.fpt.careermate.services.coach_services.service.CourseImp;
 import com.fpt.careermate.services.coach_services.service.RoadmapImp;
-import com.fpt.careermate.services.coach_services.service.dto.request.CourseCreationRequest;
 import com.fpt.careermate.services.coach_services.service.dto.response.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,9 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.util.List;
 
 @RestController
@@ -27,7 +22,6 @@ import java.util.List;
 public class RoadmapController {
 
     RoadmapImp roadmapImp;
-    AdminRoadmapImp adminRoadmapImp;
 
     @GetMapping()
     @Operation(description = """
@@ -104,23 +98,6 @@ public class RoadmapController {
     public ApiResponse<Void> resetRoadmapCollection()
     {
         roadmapImp.resetRoadmapCollection();
-        return ApiResponse.<Void>builder()
-                .code(200)
-                .message("success")
-                .build();
-    }
-
-    @PostMapping("/creation")
-    @Operation(description = """
-            Add roadmap from google bucket
-            input: none
-            output: success
-            Need login as ADMIN to access this API
-            DO NOT USE IN PRODUCTION
-            """)
-    public ApiResponse<Void> addRoadmap()
-    {
-        adminRoadmapImp.run();
         return ApiResponse.<Void>builder()
                 .code(200)
                 .message("success")

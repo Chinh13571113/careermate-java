@@ -73,18 +73,16 @@ public class RoadmapSeeder implements CommandLineRunner {
                 try {
                     credentials = GoogleCredentials.getApplicationDefault();
                 } catch (IOException e) {
-                    log.info("→ Application Default Credentials not available: {}", e.getMessage());
-                    log.info("→ Trying local resource file");
                     // Priority 3: Fall back to local resource file
                     Resource resource = resourceLoader.getResource("classpath:careermate-bucket.json");
 
                     if (resource.exists()) {
                         try (InputStream serviceAccountStream = resource.getInputStream()) {
                             credentials = GoogleCredentials.fromStream(serviceAccountStream);
-                            log.info("✓ Successfully loaded credentials from local file");
+                            log.info("Successfully loaded credentials from local file");
                         }
                     } else {
-                        log.info("Please ensure the file exists at: src/main/resources/careermate-bucket.json");
+                        log.error("Please ensure the file exists at: src/main/resources/careermate-bucket.json");
                     }
                 }
             }
